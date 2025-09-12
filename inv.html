@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invitación</title>
+  <style>
+    body{font-family:system-ui,Arial,Helvetica,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;background:#fbfaf7;color:#1f2937}
+    .card{background:#fff;border:1px solid #eee;border-radius:14px;padding:16px}
+    h1{font-size:22px;margin:12px 0}
+    .muted{color:#6b7280}
+    .err{color:#b91c1c}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Invitación</h1>
+    <p id="estado" class="muted">Cargando…</p>
+    <div id="contenido" style="display:none">
+      <p><strong>Nombre:</strong> <span id="nombre"></span></p>
+      <p><strong>Evento:</strong> <span id="evento"></span></p>
+      <p><strong>Fecha:</strong> <span id="fecha"></span></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // 🔧 Tu config de Firebase (misma que en staff.html)
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+
+    const qs = new URLSearchParams(location.search);
+    const id = qs.get("id");
+
+    const $ = s => document.querySelector(s);
+    if (!id) {
+      $("#estado").textContent = "Falta el parámetro ?id en la URL.";
+    } else {
+      try {
+        const snap = await getDoc(doc(db, "invitaciones", id));
+        if (snap.exists()) {
+          const data = snap.data();
+          $("#nombre").textContent = data.nombre ?? "-";
+          $("#evento").textContent = data.evento ?? "-";
+          $("#fecha").textContent  = data.fecha ?? "-";
+          $("#estado").style.display = "none";
+          $("#contenido").style.display = "block";
+        } else {
+          $("#estado").textContent = "Invitación no encontrada.";
+          $("#estado").className = "err";
+        }
+      } catch (err) {
+        $("#estado").textContent = "Error al cargar: " + err.message;
+        $("#estado").className = "err";
+      }
+    }
+  </script>
+</body>
+</html>
