@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Fiestas QR — Eventos & Invitados</title>
+
+<!-- Tipografías -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Great+Vibes&display=swap" rel="stylesheet">
+
+<!-- Firebase (Auth + Firestore) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    /* Tema claro blanco hueso */
+    --bg:#F5F4F0; --panel:#FAF9F6; --card:#FFFFFF; --text:#222629; --muted:#6B7280;
+    --gold:#d4af37; --white:#ffffff; --ok:#22c55e; --danger:#ef4444; --radius:16px;
+    --shadow:0 8px 16px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.05);
+    --border:1px solid rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:linear-gradient(180deg,var(--panel),var(--bg));color:var(--text);
+    font-family:"Poppins",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+  img{max-width:100%;display:block}
+
+  .container{max-width:1120px;margin:0 auto;padding:16px}
+  @media (min-width: 860px){ .container{padding:24px} }
+
+  header{position:sticky;top:0;background:rgba(250,249,246,.85);backdrop-filter:blur(8px);
+         border-bottom:var(--border);z-index:20}
+  header .container{display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.2px}
+  .brand .mark{width:32px;height:32px;border-radius:50%;
+               background:radial-gradient(circle at 30% 30%, var(--gold), #b18a1a);
+               box-shadow:0 0 0 3px rgba(212,175,55,.25)}
+  @media (min-width: 860px){ .brand .mark{width:36px;height:36px} }
+
+  .btn{
+    appearance:none;border:none;border-radius:12px;padding:12px 14px;font-weight:800;cursor:pointer;
+    background:#f1f5f9;color:#111827; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    width:100%;letter-spacing:.2px; transition:transform .06s ease, box-shadow .12s ease, background .12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:focus{outline:2px solid rgba(212,175,55,.45); outline-offset:2px}
+  .btn:active{transform:translateY(1px) scale(.99)}
+  .btn.gold{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;box-shadow:0 4px 12px rgba(212,175,55,.25)}
+  .btn.ghost{background:#fff;border:1px solid rgba(0,0,0,.08)}
+  .btn.ok{background:linear-gradient(180deg,rgba(34,197,94,.2),rgba(34,197,94,.35));border:1px solid rgba(34,197,94,.45);color:#064e3b}
+  .btn.danger{background:linear-gradient(180deg,rgba(239,68,68,.15),rgba(239,68,68,.3));border:1px solid rgba(239,68,68,.45);color:#7f1d1d}
+  @media (min-width: 720px){ .btn{width:auto} }
+
+  .grid{display:grid;gap:16px}
+  .card{
+    background:var(--card); border:var(--border); border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+  .card .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:var(--border)}
+  .card .card-c{padding:14px 16px}
+  @media (min-width: 860px){ .card .card-h{padding:16px 18px} .card .card-c{padding:16px 18px} }
+
+  .field{display:grid;gap:6px; min-width:0}
+  label{font-size:.9rem;color:var(--muted)}
+  input,select{
+    background:#fff;border:1px solid rgba(0,0,0,.12);color:var(--text);
+    border-radius:12px;padding:12px; width:100%;
+  }
+  input::placeholder{color:#9aa3af}
+  .row{display:flex;gap:12px;flex-wrap:wrap; align-items:flex-start}
+  .hidden{display:none !important}
+  .muted{color:var(--muted)}
+  .mini{font-size:.9rem}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{padding:10px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.12);cursor:pointer;font-weight:700;background:#fff}
+  .tab.active{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;border-color:#d4af37}
+  .pill{padding:6px 10px;border-radius:999px;font-size:.8rem;border:1px solid rgba(0,0,0,.12); background:#fff}
+  .pill.gold{background:linear-gradient(180deg,#fff5c2,#d4af37);color:#1f1303;border-color:#d4af37}
+  .pill.white{background:#fff;color:#111}
+  .pill.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35); color:#065f46}
+  .list{display:grid;gap:12px}
+  .event-card{display:grid;gap:12px;padding:16px;border-radius:16px;border:var(--border);background:#fff}
+  .event-card.finalizado{background:linear-gradient(180deg, rgba(255,246,196,.45), #fff);border-color:rgba(212,175,55,.55)}
+
+  /* Tablas */
+  table{border-collapse:collapse; width:100%; min-width:620px}
+  th,td{padding:10px 12px; border-bottom:1px solid rgba(0,0,0,.08); text-align:left}
+  thead th{background:#fafafa; font-size:.9rem; color:#4b5563}
+
+  /* QR & Flyer */
+  .qr-box{display:grid;place-items:center;padding:12px;border-radius:16px;background:#fafafa;border:1px dashed rgba(212,175,55,.5)}
+  .flyer-wrapper{display:grid;place-items:center}
+  .flyer-card{background:#fff;border:var(--border);border-radius:20px;padding:12px}
+  .flyer-img{width:100%;max-width:460px;border-radius:16px;box-shadow:var(--shadow)}
+  @media (min-width: 860px){ .flyer-img{max-width:720px} }
+
+  /* Floating action (móvil) */
+  .fab{position:fixed;right:16px;bottom:16px;background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;
+       padding:14px 16px;border-radius:999px;font-weight:900;box-shadow:0 10px 24px rgba(212,175,55,.3);cursor:pointer;display:none; z-index:25}
+  .fab:active{transform:translateY(1px)}
+  @media (max-width: 760px){ .fab{display:block} }
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);
+         bottom:16px;background:#111827;color:#f9fafb;border:1px solid rgba(0,0,0,.2);
+         padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);z-index:100}
+  .foot{margin-top:22px;font-size:.85rem;color:var(--muted)}
+  .video{width:100%;max-height:360px;border-radius:16px;border:1px solid rgba(0,0,0,.12);background:#000}
+
+  /* Layout responsive */
+  .grid.two{grid-template-columns:1fr}
+  @media (min-width: 860px){ .grid.two{grid-template-columns:1fr 1fr} }
+
+  /* Modal check-in flyer */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:200}
+  .modal-body{background:#fff;border:var(--border);border-radius:18px;box-shadow:var(--shadow);padding:12px;max-width:780px;width:100%}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:var(--border)}
+</style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="brand"><div class="mark"></div><span>Fiestas<span style="color:var(--gold)">QR</span></span></div>
+      <div class="row" id="userBar" style="align-items:center">
+        <span id="userEmail" class="mini"></span>
+        <button class="btn ghost" id="logoutBtn" title="Cerrar sesión">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- LANDING (cuando se abre un link de QR) -->
+  <section id="landing" class="container hidden" aria-live="polite">
+    <div class="card">
+      <div class="card-h"><strong>Invitación</strong></div>
+      <div class="card-c">
+        <div id="landingMsg" style="font-size:1.1rem"></div>
+        <div class="muted" id="landingDetail" style="margin-top:6px"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn gold" data-tab-target="escanear">Ir al escáner (staff)</button>
+          <button class="btn ghost" data-tab-target="invitados">Volver a la app</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <!-- AUTENTICACIÓN -->
+    <section id="auth">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-h"><strong>Iniciar sesión</strong></div>
+          <div class="card-c">
+            <div class="grid">
+              <div class="field"><label for="loginEmail">Correo</label><input id="loginEmail" type="email" placeholder="empresa@ejemplo.com" autocomplete="username" /></div>
+              <div class="field"><label for="loginPass">Contraseña</label><input id="loginPass" type="password" placeholder="********" autocomplete="current-password" /></div>
+              <button class="btn gold" id="loginBtn">Entrar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><strong>Registración</strong></div>
+          <div class="card-c">
+            <div class="grid">
+              <div class="field"><label for="regEmail">Correo</label><input id="regEmail" type="email" placeholder="empresa@ejemplo.com" autocomplete="email" /></div>
+              <div class="field"><label for="regPass">Contraseña</label><input id="regPass" type="password" placeholder="Crea una contraseña" autocomplete="new-password" /></div>
+              <button class="btn ok" id="registerBtn">Crear cuenta</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APLICACIÓN -->
+    <section id="app" class="hidden">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="tabs" role="tablist">
+          <div class="tab active" data-tab="eventos">Eventos</div>
+          <div class="tab" data-tab="invitados">Invitados</div>
+          <div class="tab" data-tab="caducadas">Invitaciones caducadas</div>
+          <div class="tab" data-tab="escanear">Escanear QR</div>
+        </div>
+      </div>
+
+      <!-- EVENTOS -->
+      <div id="vista-eventos">
+        <div class="grid two">
+          <div class="card">
+            <div class="card-h"><strong>Nuevo evento</strong></div>
+            <div class="card-c">
+              <div class="row">
+                <div class="field" style="flex:1 1 240px"><label for="evNombre">Nombre del evento</label><input id="evNombre" placeholder="Ej: Fiesta Primavera" /></div>
+                <div class="field" style="width:210px"><label for="evFecha">Fecha</label><input id="evFecha" type="date" /></div>
+                <div class="field" style="width:210px"><label>&nbsp;</label><button class="btn gold" id="crearEventoBtn">Crear evento</button></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><strong>Buscar invitados por evento</strong></div>
+            <div class="card-c">
+              <div class="field"><label for="buscarEventoSel">Elegí un evento</label><select id="buscarEventoSel"></select></div>
+              <div class="row" style="margin-top:10px;align-items:center">
+                <input id="buscarInvitadosInput" placeholder="Buscar por nombre..." />
+                <button class="btn ghost" id="buscarInvitadosBtn">Buscar</button>
+              </div>
+              <div id="zonaInvitadosEvento" style="margin-top:12px"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px">
+          <div class="card-h"><strong>Lista de eventos</strong></div>
+          <div class="card-c"><div id="listaEventos" class="list"></div></div>
+        </div>
+      </div>
+
+      <!-- INVITADOS -->
+      <div id="vista-invitados" class="hidden">
+        <div class="grid two">
+          <div class="card">
+            <div class="card-h"><strong>Registrar nuevo invitado</strong></div>
+            <div class="card-c">
+              <div class="row">
+                <div class="field" style="flex:1 1 250px"><label for="invNombre">Nombre y apellido</label><input id="invNombre" placeholder="Ej: Ana Pérez" /></div>
+                <div class="field" style="width:260px"><label for="invEvento">Evento</label><select id="invEvento"></select></div>
+                <div class="field" style="width:220px"><label>&nbsp;</label><button class="btn gold" id="registrarInvitadoBtn">Crear invitación + QR</button></div>
+              </div>
+
+              <!-- PREVIEW QR + FLYER -->
+              <div id="qrPreview" class="hidden" style="margin-top:12px">
+                <div class="grid two">
+                  <div class="qr-box"><div id="qrCanvas" data-guest-id=""></div></div>
+                  <div class="grid">
+                    <div>
+                      <strong id="qrNombre"></strong>
+                      <div class="mini">Evento: <span id="qrEvento"></span></div>
+                      <div class="mini">Token: <span id="qrToken"></span></div>
+                      <div class="mini">Uso único. Mostrar al recepcionista.</div>
+                    </div>
+                    <div class="row">
+                      <button class="btn ok" id="descargarQRBtn">Descargar PNG (QR)</button>
+                      <button class="btn ghost" id="imprimirQRBtn">Imprimir QR</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card flyer-wrapper" style="margin-top:14px">
+                  <div class="card-h"><strong>Flyer del invitado</strong></div>
+                  <div class="card-c">
+                    <div class="row" style="align-items:end">
+                      <div class="field" style="min-width:230px">
+                        <label for="flyerTheme">Tema del flyer</label>
+                        <select id="flyerTheme"></select>
+                      </div>
+                      <div class="row" style="gap:8px;margin-left:auto">
+                        <button class="btn ok" id="descargarFlyerBtn">Descargar Flyer (PNG)</button>
+                        <button class="btn ghost" id="imprimirFlyerBtn">Imprimir Flyer</button>
+                      </div>
+                    </div>
+                    <div class="flyer-card" style="margin-top:12px">
+                      <img id="flyerImg" class="flyer-img" alt="Flyer de invitación">
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><strong>Invitados recientes</strong></div>
+            <div class="card-c"><div id="listaInvitadosRecientes"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CADUCADAS -->
+      <div id="vista-caducadas" class="hidden">
+        <div class="card">
+          <div class="card-h"><strong>Invitaciones caducadas (ya utilizadas)</strong></div>
+          <div class="card-c">
+            <div class="field"><label for="buscarCad">Buscar</label><input id="buscarCad" placeholder="Nombre o evento..." /></div>
+            <div id="listaCaducadas" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESCANEAR -->
+      <div id="vista-escanear" class="hidden">
+        <div class="card">
+          <div class="card-h"><strong>Escanear QR</strong></div>
+          <div class="card-c">
+            <div class="row" style="align-items:center">
+              <div class="field" style="flex:1 1 260px"><label for="scanEvento">Limitar al evento (opcional)</label><select id="scanEvento"></select></div>
+              <div class="field" style="width:210px"><label>&nbsp;</label><button class="btn gold" id="scanBtn">Iniciar cámara</button></div>
+            </div>
+            <video id="video" class="video" playsinline muted></video>
+            <div class="row" style="margin-top:12px;align-items:center">
+              <div class="field" style="flex:1 1 260px"><label>Ingreso manual (si no hay cámara)</label><input id="manualCode" placeholder='Pegá aquí el contenido del QR o el token' /></div>
+              <div class="field" style="width:200px"><label>&nbsp;</label><button class="btn ghost" id="validarManualBtn">Validar manual</button></div>
+            </div>
+            <div id="scanResultado" style="margin-top:12px" class="mini muted">Estado: esperando…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">Hecho con <span style="color:var(--gold)">★</span> — Tema claro y funciones listas en móvil + PC.</div>
+    </section>
+  </main>
+
+  <!-- Botón flotante para escanear (móvil) -->
+  <div class="fab" id="fabScan">📷 Escanear</div>
+
+  <!-- Modal: muestra el flyer de CHECK-IN (con el NOMBRE en lugar del QR) -->
+  <div id="modalCheckin" class="modal" role="dialog" aria-modal="true" aria-label="Ingreso confirmado">
+    <div class="modal-body">
+      <div class="modal-head">
+        <strong>Ingreso confirmado</strong>
+        <button class="btn ghost" id="modalCloseBtn">Cerrar</button>
+      </div>
+      <div style="padding:12px">
+        <img id="checkinFlyerImg" class="flyer-img" alt="Check-in Flyer">
+      </div>
+    </div>
+  </div>
+
+  <!-- Librería QR -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"
+          defer onload="window.__qrlib='modern';" onerror="window.__qrlib='missing';"></script>
+
+  <script>
+  /* ==================== CONFIG FIREBASE (COMPLETÁ TU CONFIG) ==================== */
+  // Si no configurás Firebase, funciona en modo "local" (datos en este navegador)
+  const firebaseConfig = {
+  apiKey: "AIzaSyBoQwuL4B0R9VGJubbSEjWfML871SQE",
+  authDomain: "ok-invitaciones.firebaseapp.com",
+  projectId: "ok-invitaciones",
+  storageBucket: "ok-invitaciones.appspot.com",
+  messagingSenderId: "55276862682",
+  appId: "1:55276862682:web:6bb9b275e746f8fb00e43",
+  measurementId: "G-Q2DP9HK5PN"
+};
+  /* ============================================================================ */
+
+  /* ====== Estado base ====== */
+  const THEMES = {
+    oro:{name:'Oro clásico', bg1:'#fff6dc', bg2:'#fff', glow:'rgba(212,175,55,.25)', band1:'#f8e38c', band2:'#d4af37', confetti:['#ffd166','#fcbf49','#e9c46a','#d4af37','#60a5fa','#e879f9'], textOnBand:'#2a1f0b', frame:'rgba(212,175,55,.65)'},
+    turquesa:{name:'Turquesa', bg1:'#e8fffb', bg2:'#fff', glow:'rgba(34,197,163,.2)', band1:'#5eead4', band2:'#10b981', confetti:['#5eead4','#22d3ee','#99f6e4','#60a5fa','#f472b6'], textOnBand:'#022c22', frame:'rgba(16,185,129,.55)'},
+    fucsia:{name:'Fucsia', bg1:'#fff0f7', bg2:'#fff', glow:'rgba(236,72,153,.2)', band1:'#f472b6', band2:'#ec4899', confetti:['#f472b6','#fb7185','#f59e0b','#60a5fa','#e879f9'], textOnBand:'#3a0a1b', frame:'rgba(236,72,153,.55)'},
+    esmeralda:{name:'Esmeralda', bg1:'#eafff4', bg2:'#fff', glow:'rgba(52,211,153,.2)', band1:'#86efac', band2:'#22c55e', confetti:['#86efac','#34d399','#a7f3d0','#60a5fa','#facc15'], textOnBand:'#062814', frame:'rgba(34,197,94,.55)'},
+    negro_oro:{name:'Negro & Oro', bg1:'#fafafa', bg2:'#fff', glow:'rgba(212,175,55,.22)', band1:'#ffe08a', band2:'#d4af37', confetti:['#fff2b2','#facc15','#f59e0b','#d4af37','#94a3b8'], textOnBand:'#2a1f0b', frame:'rgba(212,175,55,.7)'}
+  };
+
+  const DBKEY = 'fiestasQR.local.v2';
+  const state = {
+    mode: 'local', // 'cloud' si hay Firebase
+    user: null, uid:null,
+    events: [], guests: [],
+    ui:{currentTab:'eventos', invitadosEventoActual:null, flyerTheme:'oro', lastGuestId:null},
+    flyers:{ lastDataUrl:null }
+  };
+
+  let useCloud = true, db=null, auth=null;
+  try{
+    if(!FIREBASE_CONFIG || FIREBASE_CONFIG.apiKey==="TU_API_KEY"){ useCloud = false; }
+    else { firebase.initializeApp(FIREBASE_CONFIG); }
+  }catch(e){ useCloud=false; }
+  if(useCloud){ db=firebase.firestore(); auth=firebase.auth(); state.mode='cloud'; auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{}); }
+
+  /* ====== Util ====== */
+  function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.remove(); }, 2400); }
+  function escapeHtml(s){ return (s||'').replace(/[&<>\"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+  function uid(){ return crypto.randomUUID ? crypto.randomUUID() : 'id-'+Math.random().toString(36).slice(2); }
+  function newToken(){ return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase(); }
+  async function sha256hex(str){ const enc = new TextEncoder(); const buf = await crypto.subtle.digest('SHA-256', enc.encode(str)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+
+  /* ====== Local storage ====== */
+  function localLoad(){ const raw=localStorage.getItem(DBKEY); if(raw){ try{ const l=JSON.parse(raw); state.events=l.events||[]; state.guests=l.guests||[]; }catch{} } }
+  function localSave(){ localStorage.setItem(DBKEY, JSON.stringify({events:state.events, guests:state.guests})); }
+
+  /* ====== Firestore refs ====== */
+  const colEvents = ()=> db.collection('users').doc(state.uid).collection('events');
+  const colGuests = ()=> db.collection('users').doc(state.uid).collection('guests');
+  const colPublic = ()=> db.collection('public_guests'); // lectura pública
+
+  /* ====== Binding de botones (mejor que inline para móvil/PC) ====== */
+  document.addEventListener('click', (e)=>{
+    const t = e.target;
+
+    // Tabs
+    if(t.closest('.tab')){ const tab = t.closest('.tab').dataset.tab; showTab(tab); }
+
+    // header salir
+    if(t.id==='logoutBtn'){ logout(); }
+
+    // landing → tabs
+    if(t.dataset.tabTarget){ showTab(t.dataset.tabTarget); }
+
+    // auth
+    if(t.id==='loginBtn'){ login(); }
+    if(t.id==='registerBtn'){ register(); }
+
+    // eventos
+    if(t.id==='crearEventoBtn'){ crearEvento(); }
+
+    // invitados
+    if(t.id==='registrarInvitadoBtn'){ registrarInvitado(); }
+    if(t.id==='descargarQRBtn'){ descargarQR(); }
+    if(t.id==='imprimirQRBtn'){ imprimirQR(); }
+    if(t.id==='descargarFlyerBtn'){ descargarFlyer(); }
+    if(t.id==='imprimirFlyerBtn'){ imprimirFlyer(); }
+
+    // buscar invitados
+    if(t.id==='buscarInvitadosBtn'){ filtrarInvitadosActual(); }
+
+    // escáner
+    if(t.id==='scanBtn'){ toggleScanner(); }
+    if(t.id==='validarManualBtn'){ procesarManual(); }
+
+    // fab
+    if(t.id==='fabScan'){ showTab('escanear'); setTimeout(()=>{ toggleScanner(); }, 200); }
+
+    // modal
+    if(t.id==='modalCloseBtn'){ hideModal(); }
+    if(t.id==='modalCheckin'){ hideModal(); }
+  });
+
+  /* ====== Inputs con listeners ====== */
+  document.addEventListener('input', (e)=>{
+    if(e.target.id==='buscarInvitadosInput'){ filtrarInvitadosActual(); }
+    if(e.target.id==='buscarCad'){ renderCaducadas(); }
+    if(e.target.id==='flyerTheme'){ regenerarFlyer(); }
+    if(e.target.id==='buscarEventoSel'){ renderInvitadosDeEvento(e.target.value); }
+  });
+
+  /* ====== Auth ====== */
+  async function register(){
+    const email = document.getElementById('regEmail').value.trim();
+    const pass  = document.getElementById('regPass').value || '';
+    if(!email) return toast('Ingresá un correo');
+    if(!pass)  return toast('Ingresá una contraseña');
+    if(state.mode==='cloud'){
+      try{ await auth.createUserWithEmailAndPassword(email, pass); toast('Cuenta creada'); }
+      catch(err){ console.error(err); toast('No se pudo registrar'); }
+    }else{
+      toast('Sin Firebase: se guarda en este navegador');
+      state.user={email}; state.uid='local'; syncUIAuth();
+    }
+  }
+  async function login(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPass').value || '';
+    if(state.mode==='cloud'){
+      try{ await auth.signInWithEmailAndPassword(email, pass); toast('Bienvenido'); }
+      catch(err){ console.error(err); toast('Login inválido'); }
+    }else{
+      state.user={email}; state.uid='local'; toast('Modo local'); syncUIAuth();
+    }
+  }
+  function logout(){ if(state.mode==='cloud'){ auth.signOut(); } else { state.user=null; state.uid=null; syncUIAuth(); } }
+
+  if(state.mode==='cloud'){
+    auth.onAuthStateChanged(async (user)=>{
+      state.user = user || null; state.uid = user? user.uid : null;
+      syncUIAuth();
+      if(user){ await cloudSubscribe(); } else { /* stay */ }
+    });
+  }
+
+  function syncUIAuth(){
+    const logged = !!state.user;
+    document.getElementById('auth').classList.toggle('hidden', logged);
+    document.getElementById('app').classList.toggle('hidden', !logged);
+    document.getElementById('userBar').classList.toggle('hidden', !logged);
+    document.getElementById('userEmail').textContent = logged ? (state.user.email||'') : '';
+    if(!logged && state.mode==='local'){ localLoad(); }
+    if(logged){
+      showTab(state.ui.currentTab || 'eventos');
+      refrescarCombos(); renderEventos(); renderInvitadosRecientes(); renderCaducadas();
+    }
+  }
+
+  /* ====== Subscripción tiempo real (cloud) ====== */
+  let unsubEvents=null, unsubGuests=null;
+  async function cloudSubscribe(){
+    if(unsubEvents) unsubEvents();
+    if(unsubGuests) unsubGuests();
+    unsubEvents = colEvents().onSnapshot((snap)=>{
+      state.events = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      refrescarCombos(); renderEventos(); renderInvitadosRecientes();
+      if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); }
+    }, (e)=>console.error(e));
+    unsubGuests = colGuests().onSnapshot((snap)=>{
+      state.guests = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderInvitadosRecientes(); renderCaducadas();
+      if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); }
+    }, (e)=>console.error(e));
+  }
+
+  /* ====== Tabs ====== */
+  function showTab(tab){
+    state.ui.currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+    document.getElementById('vista-eventos').classList.toggle('hidden', tab!=='eventos');
+    document.getElementById('vista-invitados').classList.toggle('hidden', tab!=='invitados');
+    document.getElementById('vista-caducadas').classList.toggle('hidden', tab!=='caducadas');
+    document.getElementById('vista-escanear').classList.toggle('hidden', tab!=='escanear');
+    document.getElementById('landing').classList.add('hidden');
+  }
+
+  /* ====== Eventos ====== */
+  async function crearEvento(){
+    const nombre = document.getElementById('evNombre').value.trim();
+    const fecha  = document.getElementById('evFecha').value || '';
+    if(!nombre) return toast('Poné un nombre para el evento');
+    const ev = {nombre, fecha, finalizado:false};
+    if(state.mode==='cloud'){
+      try{ await colEvents().add(ev); toast('Evento creado'); }
+      catch(e){ console.error(e); toast('No se pudo crear'); }
+    }else{
+      state.events.push({id:uid(), ...ev}); localSave(); renderEventos(); refrescarCombos(); toast('Evento creado');
+    }
+    document.getElementById('evNombre').value=''; document.getElementById('evFecha').value='';
+  }
+  async function toggleFinalizado(eventId){
+    const ev = state.events.find(e=>e.id===eventId); if(!ev) return;
+    const newVal = !ev.finalizado;
+    if(state.mode==='cloud'){ try{ await colEvents().doc(eventId).update({finalizado:newVal}); }catch(e){ console.error(e); toast('Error al actualizar'); return; } }
+    else { ev.finalizado=newVal; localSave(); }
+    renderEventos(); toast(newVal?'Evento marcado como finalizado':'Evento reabierto');
+  }
+  function renderEventos(){
+    const cont = document.getElementById('listaEventos'); cont.innerHTML='';
+    if(state.events.length===0){ cont.innerHTML = '<div class="muted">No hay eventos todavía.</div>'; return; }
+    state.events.slice().reverse().forEach(ev=>{
+      const card = document.createElement('div');
+      card.className = 'event-card '+(ev.finalizado?'finalizado':'');
+      card.innerHTML = `
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div>
+            <div class="name" style="font-weight:800;font-size:1.1rem">${escapeHtml(ev.nombre)}</div>
+            <div class="row" style="gap:8px;align-items:center;margin-top:4px">
+              <span class="pill ${ev.finalizado?'gold':'white'}">${ev.finalizado?'Evento finalizado':'Sin empezar'}</span>
+              ${ev.fecha?`<span class="pill">📅 ${ev.fecha}</span>`:''}
+              <span class="pill">👥 ${state.guests.filter(g=>g.eventId===ev.id).length} invitados</span>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn ghost" data-action="verInv" data-id="${ev.id}">Ver invitados</button>
+            <button class="btn ${ev.finalizado?'ok':'gold'}" data-action="toggleEv" data-id="${ev.id}">${ev.finalizado?'Reabrir':'Marcar finalizado'}</button>
+          </div>
+        </div>`;
+      cont.appendChild(card);
+    });
+
+    // Delegación para botones de cada tarjeta
+    cont.querySelectorAll('button[data-action="verInv"]').forEach(b=>{
+      b.addEventListener('click', ()=>{ abrirBuscadorEvento(b.dataset.id); });
+    });
+    cont.querySelectorAll('button[data-action="toggleEv"]').forEach(b=>{
+      b.addEventListener('click', ()=>{ toggleFinalizado(b.dataset.id); });
+    });
+  }
+  function abrirBuscadorEvento(eventId){
+    const sel = document.getElementById('buscarEventoSel');
+    sel.value = eventId;
+    renderInvitadosDeEvento(eventId);
+    showTab('eventos');
+  }
+  function renderInvitadosDeEvento(eventId){
+    state.ui.invitadosEventoActual = eventId;
+    const zona = document.getElementById('zonaInvitadosEvento');
+    const ev = state.events.find(e=>e.id===eventId);
+    if(!ev){ zona.innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>'; return; }
+    const q = document.getElementById('buscarInvitadosInput').value.trim().toLowerCase();
+    const invitados = state.guests.filter(g=>g.eventId===eventId && g.nombre.toLowerCase().includes(q));
+    zona.innerHTML = `
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="muted">${invitados.length} invitado(s) de "${escapeHtml(ev.nombre)}"</div>
+        <div class="row"><button class="btn ghost" id="scanHereBtn">Escanear aquí</button></div>
+      </div>
+      <div style="overflow:auto">
+        <table class="table">
+          <thead><tr><th>Nombre</th><th>Token</th><th>Estado</th><th>QR</th></tr></thead>
+          <tbody id="tbodyInvEvt"></tbody>
+        </table>
+      </div>`;
+    const tbody = zona.querySelector('#tbodyInvEvt');
+    invitados.forEach(g=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(g.nombre)}</td>
+        <td class="muted">${g.token}</td>
+        <td>${g.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}</td>
+        <td><button class="btn ghost" data-showqr="${g.id}">Ver QR</button></td>`;
+      tbody.appendChild(tr);
+    });
+    zona.querySelector('#scanHereBtn').addEventListener('click', ()=>{
+      document.getElementById('scanEvento').value=ev.id; showTab('escanear'); setTimeout(()=>{ toggleScanner(); }, 150);
+    });
+    tbody.querySelectorAll('button[data-showqr]').forEach(b=>{
+      b.addEventListener('click', ()=>{ verQR(b.dataset.showqr); });
+    });
+  }
+  function filtrarInvitadosActual(){ if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); } }
+  function refrescarCombos(){
+    const sel1 = document.getElementById('invEvento');
+    const sel2 = document.getElementById('buscarEventoSel');
+    const sel3 = document.getElementById('scanEvento');
+    const opts = state.events.map(e=>`<option value="${e.id}">${escapeHtml(e.nombre)}</option>`).join('');
+    if(sel1) sel1.innerHTML = `<option value="">Elegí un evento…</option>${opts}`;
+    if(sel2) sel2.innerHTML = `<option value="">Seleccioná…</option>${opts}`;
+    if(sel3) sel3.innerHTML = `<option value="">(Cualquiera)</option>${opts}`;
+  }
+
+  /* ====== Invitados + QR + FLYER ====== */
+  async function registrarInvitado(){
+    const nombre = document.getElementById('invNombre').value.trim();
+    const eventId= document.getElementById('invEvento').value;
+    if(!nombre) return toast('Escribí el nombre del invitado');
+    if(!eventId) return toast('Elegí el evento');
+
+    let token; do{ token = newToken(); } while(state.guests.some(g=>g.token===token));
+    const guest = {nombre, eventId, token, used:false, usedAt:null};
+    let gid;
+    if(state.mode==='cloud'){
+      try{
+        const doc = await colGuests().add(guest); gid = doc.id;
+        const ev = state.events.find(e=>e.id===eventId);
+        const tokenHash = await sha256hex(token);
+        await colPublic().doc(`${state.uid}_${gid}`).set({uid:state.uid, guestId:gid, nombre, eventName:ev?ev.nombre:'', tokenHash});
+      }catch(e){ console.error(e); toast('No se pudo crear invitación'); return; }
+    }else{
+      gid = uid(); state.guests.push({id:gid, ...guest}); localSave();
+    }
+    document.getElementById('invNombre').value='';
+    const gObj = {id:gid, ...guest};
+    if(state.mode==='cloud'){ state.guests.push(gObj); } // UX
+    mostrarInvitacion(gObj);
+    renderInvitadosDeEvento(state.ui.invitadosEventoActual || eventId);
+    renderInvitadosRecientes();
+    toast('Invitación creada');
+  }
+
+  function verQR(guestId){
+    const g = state.guests.find(x=>x.id===guestId); if(!g) return;
+    mostrarInvitacion(g); showTab('invitados');
+  }
+
+  function buildShareURL(g){
+    // URL que abre landing: ?u=UID&g=GUEST_ID&t=TOKEN
+    const u = encodeURIComponent(state.uid||'local');
+    const id= encodeURIComponent(g.id);
+    const t = encodeURIComponent(g.token);
+    const base = window.location.origin + window.location.pathname;
+    return `${base}?u=${u}&g=${id}&t=${t}`;
+  }
+
+  function buildThemeOptions(){
+    const sel = document.getElementById('flyerTheme');
+    if(!sel) return;
+    sel.innerHTML = Object.entries(THEMES).map(([k,t]) =>
+      `<option value="${k}" ${state.ui.flyerTheme===k?'selected':''}>${t.name}</option>`).join('');
+  }
+
+  function mostrarInvitacion(guest){
+    const ev = state.events.find(e=>e.id===guest.eventId);
+    const wrap = document.getElementById('qrCanvas');
+    const url  = buildShareURL(guest); // QR es link único
+    makeQR(wrap, url, 240);
+    wrap.dataset.guestId = guest.id;
+
+    document.getElementById('qrNombre').textContent = guest.nombre;
+    document.getElementById('qrToken').textContent  = guest.token;
+    document.getElementById('qrEvento').textContent = ev ? ev.nombre : '—';
+    document.getElementById('qrPreview').classList.remove('hidden');
+
+    state.ui.lastGuestId = guest.id;
+    buildThemeOptions();
+    const qrNode = wrap.querySelector('canvas, img');
+    generarFlyerPNG({
+      invitado: guest.nombre, evento: ev?ev.nombre:'', token: guest.token, qrNode, seed: guest.token, themeKey: state.ui.flyerTheme, shareURL:url, mode:'qr'
+    }).then((dataUrl)=>{ state.flyers.lastDataUrl=dataUrl; document.getElementById('flyerImg').src=dataUrl; });
+  }
+
+  function regenerarFlyer(){
+    const gid = state.ui.lastGuestId; if(!gid) return;
+    const guest = state.guests.find(g=>g.id===gid); if(!guest) return;
+    const ev = state.events.find(e=>e.id===guest.eventId);
+    const wrap = document.getElementById('qrCanvas'); const qrNode = wrap.querySelector('canvas, img');
+    state.ui.flyerTheme = document.getElementById('flyerTheme').value || state.ui.flyerTheme;
+    const url = buildShareURL(guest);
+    generarFlyerPNG({invitado:guest.nombre, evento:ev?ev.nombre:'', token:guest.token, qrNode, seed:guest.token, themeKey:state.ui.flyerTheme, shareURL:url, mode:'qr'})
+      .then((d)=>{ state.flyers.lastDataUrl=d; document.getElementById('flyerImg').src=d; });
+  }
+
+  /* ====== Generador de QR ====== */
+  function loadFallbackLib(cb){
+    if (window.__loading_qr_fallback) { cb && cb(); return; }
+    window.__loading_qr_fallback = true;
+    var s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload=function(){ window.__qrlib='classic'; cb&&cb(); };
+    s.onerror=function(){ console.error('No se pudo cargar librería QR'); };
+    document.head.appendChild(s);
+  }
+  function makeQR(el, text, size=240){
+    el.innerHTML='';
+    if (window.QRCode && typeof QRCode.toCanvas==='function'){
+      var c=document.createElement('canvas'); c.width=c.height=size; el.appendChild(c);
+      try{ QRCode.toCanvas(c, String(text), {width:size, errorCorrectionLevel:'M', margin:2}); }catch(e){ console.error(e); }
+      return c;
+    }
+    if (window.QRCode && typeof QRCode==='function' && !QRCode.toCanvas){
+      try{ new QRCode(el, {text:String(text), width:size, height:size, correctLevel:(window.QRCode.CorrectLevel?window.QRCode.CorrectLevel.M:0)}); }catch(e){ console.error(e); }
+      return el.querySelector('canvas, img');
+    }
+    loadFallbackLib(function(){ try{ makeQR(el, text, size); }catch(_){} });
+    el.innerHTML='<div class="muted">Cargando librería de QR…</div>';
+    return null;
+  }
+
+  /* ====== Flyer (QR o Nombre gigante) ====== */
+  async function generarFlyerPNG({invitado, evento, token, qrNode, seed='x', themeKey='oro', shareURL='', mode='qr' }){
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.load('900 72px "Poppins"'); await document.fonts.load('400 76px "Great Vibes"'); await document.fonts.ready; } catch(_) {}
+    }
+    const T = THEMES[themeKey] || THEMES.oro;
+    const W = 1000, H = 1600;
+    const c = document.createElement('canvas'); c.width=W; c.height=H;
+    const ctx = c.getContext('2d');
+
+    // Fondo claro
+    const g1 = ctx.createLinearGradient(0,0,0,H);
+    g1.addColorStop(0,T.bg1); g1.addColorStop(1,T.bg2);
+    ctx.fillStyle = g1; ctx.fillRect(0,0,W,H);
+    const rg = ctx.createRadialGradient(W*0.8,H*0.2,60, W*0.8,H*0.2,600);
+    rg.addColorStop(0,T.glow); rg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(W*0.8,H*0.2,600,0,Math.PI*2); ctx.fill();
+
+    // Marco
+    ctx.strokeStyle = T.frame; ctx.lineWidth = 6; ctx.strokeRect(28,28,W-56,H-56);
+
+    // Confeti
+    const rand = seeded(seed);
+    for(let i=0;i<110;i++){
+      const x = rand()*W, y = rand()*H; const r = 3 + rand()*4;
+      ctx.fillStyle = T.confetti[Math.floor(rand()*T.confetti.length)];
+      ctx.save(); ctx.translate(x,y); ctx.rotate(rand()*Math.PI*2);
+      ctx.fillRect(-r, -r/2, r*2.2, r); ctx.restore();
+    }
+
+    // Banda
+    const bandX=60, bandY=210, bandW=W-120, bandH=200;
+    const bandGrad = ctx.createLinearGradient(bandX,bandY,bandX+bandW,bandY);
+    bandGrad.addColorStop(0,T.band1); bandGrad.addColorStop(1,T.band2);
+    roundRect(ctx, bandX, bandY, bandW, bandH, 26, true, false, bandGrad);
+
+    // Textos
+    ctx.fillStyle = T.textOnBand;
+    ctx.font = '400 76px "Great Vibes", cursive';
+    ctx.fillText('¡Estás invitado/a al evento de', bandX+28, bandY+88);
+    ctx.font = '900 72px "Poppins", sans-serif';
+    ctx.fillText(ajustar(evento || '—', ctx, bandW-60), bandX+28, bandY+160);
+
+    ctx.fillStyle = '#111827';
+    ctx.font = '700 40px "Poppins", sans-serif';
+    ctx.fillText(`Invitado: ${invitado}`, 64, 480);
+    ctx.font = '600 30px "Poppins", sans-serif';
+    ctx.fillStyle = '#374151';
+    ctx.fillText(`Token: ${token}`, 64, 530);
+
+    // Zona central (QR o NOMBRE)
+    const BOX = 620;
+    const qx = (W-BOX)/2, qy = 600;
+    ctx.fillStyle='rgba(0,0,0,.04)';
+    roundRect(ctx, qx-26, qy-26, BOX+52, BOX+52, 28, true, false);
+    ctx.strokeStyle=T.frame; ctx.lineWidth=4; roundRect(ctx, qx-26, qy-26, BOX+52, BOX+52, 28, false, true);
+
+    if(mode==='qr'){
+      const tmp = document.createElement('canvas'); const tctx = tmp.getContext('2d');
+      let qrw = (qrNode?.naturalWidth || qrNode?.width || 240);
+      let qrh = (qrNode?.naturalHeight || qrNode?.height || 240);
+      tmp.width = qrw; tmp.height = qrh;
+      try{ if (qrNode && qrNode.tagName?.toLowerCase()==='canvas'){ tctx.drawImage(qrNode,0,0); } else if(qrNode) { tctx.drawImage(qrNode,0,0,qrw,qrh); } }catch(e){}
+      const qrImg = new Image(); qrImg.src = tmp.toDataURL('image/png');
+      await new Promise(res=>{ qrImg.onload=res; qrImg.onerror=res; });
+      ctx.drawImage(qrImg, qx, qy, BOX, BOX);
+
+      if(shareURL){
+        const short = shareURL.length>48 ? shareURL.slice(0,46)+'…' : shareURL;
+        ctx.fillStyle='#111827'; ctx.font='600 24px "Poppins", sans-serif';
+        ctx.fillText(short, 64, qy+BOX+54);
+      }
+    }else{
+      ctx.fillStyle='#111827';
+      let size = 120;
+      ctx.font = `900 ${size}px "Poppins", sans-serif`;
+      const maxW = BOX-40;
+      const texto = invitado || '';
+      while(ctx.measureText(texto).width>maxW && size>48){
+        size -= 4; ctx.font = `900 ${size}px "Poppins", sans-serif`;
+      }
+      const textW = ctx.measureText(texto).width;
+      const tx = qx + (BOX - textW)/2;
+      const ty = qy + BOX/2 + size/3;
+      ctx.fillText(texto, tx, ty);
+
+      // Sello
+      ctx.save();
+      ctx.translate(qx+BOX-140, qy+40);
+      ctx.rotate(-0.3);
+      ctx.strokeStyle = 'rgba(34,197,94,.9)';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(-120,-35,240,70);
+      ctx.fillStyle='rgba(34,197,94,.9)';
+      ctx.font='900 32px "Poppins", sans-serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText('ADMITIDO', 0, 0);
+      ctx.restore();
+    }
+
+    // Instrucciones
+    ctx.fillStyle='#111827';
+    ctx.font='600 28px "Poppins", sans-serif';
+    const lines = mode==='qr'
+      ? ['• Este QR es de USO ÚNICO.','• Mostralo al recepcionista cuando llegues al evento.']
+      : ['• Acceso registrado.','• Si fue un error, podés REACTIVAR desde "Invitaciones caducadas".'];
+    let ly = qy+BOX+96;
+    lines.forEach(txt=>{ ctx.fillText(txt, 64, ly); ly += 40; });
+
+    // Marca
+    ctx.fillStyle=T.band2; ctx.font='900 26px "Poppins", sans-serif';
+    ctx.fillText('FiestasQR', W-220, H-44);
+
+    return c.toDataURL('image/png');
+
+    function roundRect(ctx, x, y, w, h, r=16, fill=true, stroke=true, fillStyle=null){
+      if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+      ctx.beginPath();
+      ctx.moveTo(x + r.tl, y);
+      ctx.lineTo(x + w - r.tr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+      ctx.lineTo(x + w, y + h - r.br);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+      ctx.lineTo(x + r.bl, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+      ctx.lineTo(x, y + r.tl);
+      ctx.quadraticCurveTo(x, y, x + r.tl, y);
+      ctx.closePath();
+      if (fill){ if(fillStyle){ ctx.save(); ctx.fillStyle=fillStyle; ctx.fill(); ctx.restore(); } else { ctx.fill(); } }
+      if (stroke) ctx.stroke();
+    }
+    function seeded(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h + s.charCodeAt(i); h|=0; } let t=(h>>>0)+0x6D2B79F5; return function(){ t|=0; t=t+0x6D2B79F5|0; let r=Math.imul(t^t>>>15,1|t); r^=r+Math.imul(r^r>>>7,61|r); return ((r^r>>>14)>>>0)/4294967296; }; }
+    function ajustar(texto, ctx, maxW){ let size=72; while(ctx.measureText(texto).width>maxW && size>36){ size-=2; ctx.font=`900 ${size}px "Poppins", sans-serif`; } return texto; }
+  }
+
+  function descargarFlyer(){ if(!state.flyers.lastDataUrl){ toast('Generá una invitación primero'); return; }
+    const a = document.createElement('a'); a.download='Flyer_Invitacion.png'; a.href=state.flyers.lastDataUrl; a.click(); }
+  function imprimirFlyer(){ if(!state.flyers.lastDataUrl){ toast('Generá una invitación primero'); return; }
+    const w=window.open('','_blank'); w.document.write(`<img src="${state.flyers.lastDataUrl}" style="width:100%;max-width:900px">`); w.document.close(); w.focus(); w.print(); }
+
+  /* ====== Descargar / Imprimir QR ====== */
+  function descargarQR(){
+    const wrap = document.getElementById('qrCanvas'); if(!wrap) return;
+    const node = wrap.querySelector('canvas, img'); if(!node) return;
+    const g = state.guests.find(x=>x.id===wrap.dataset.guestId);
+    const filename = `QR_${g ? g.nombre.replace(/\s+/g,'_') : 'invitado'}.png`;
+    let url = '';
+    if (node.tagName.toLowerCase() === 'canvas') { url = node.toDataURL('image/png'); }
+    else {
+      if (node.src && node.src.startsWith('data:image/')) url = node.src;
+      else {
+        try{
+          const c = document.createElement('canvas');
+          const w = node.naturalWidth || 240, h = node.naturalHeight || 240;
+          c.width = w; c.height = h; const ctx = c.getContext('2d'); ctx.drawImage(node, 0, 0, w, h);
+          url = c.toDataURL('image/png');
+        }catch(e){ url = node.src || ''; }
+      }
+    }
+    if(!url){ toast('No pude preparar la imagen'); return; }
+    const a = document.createElement('a'); a.download = filename; a.href = url; a.click();
+  }
+  function imprimirQR(){
+    const wrap = document.getElementById('qrCanvas'); if(!wrap) return;
+    const node = wrap.querySelector('canvas, img'); if(!node) return;
+    const src = node.tagName.toLowerCase()==='canvas' ? node.toDataURL('image/png') : (node.src || '');
+    const w = window.open('', '_blank');
+    w.document.write(`<img src="${src}" style="width:320px">`);
+    w.document.close(); w.focus(); w.print();
+  }
+
+  /* ====== Recientes y Caducadas (con REACTIVAR) ====== */
+  function renderInvitadosRecientes(){
+    const cont = document.getElementById('listaInvitadosRecientes'); if(!cont) return;
+    const ult = state.guests.slice(-6).reverse();
+    if(ult.length===0){ cont.innerHTML = '<div class="muted">Todavía no hay invitados.</div>'; return; }
+    cont.innerHTML = '<div class="list"></div>'; const list = cont.querySelector('.list');
+    ult.forEach(g=>{
+      const ev = state.events.find(e=>e.id===g.eventId);
+      const div = document.createElement('div'); div.className='row'; div.style.justifyContent='space-between';
+      div.innerHTML = `<div><div style="font-weight:700">${escapeHtml(g.nombre)}</div>
+        <div class="muted">Evento: ${ev?escapeHtml(ev.nombre):'—'} · Token: ${g.token}</div></div>
+        <div class="row"><button class="btn ghost" data-verqr="${g.id}">Ver QR</button>${g.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}</div>`;
+      list.appendChild(div);
+    });
+    list.querySelectorAll('button[data-verqr]').forEach(b=> b.addEventListener('click', ()=> verQR(b.dataset.verqr)));
+  }
+  function renderCaducadas(){
+    const box = document.getElementById('listaCaducadas'); if(!box) return;
+    const term = (document.getElementById('buscarCad').value||'').toLowerCase();
+    const usadas = state.guests.filter(g=>g.used).map(g=>({g, ev: state.events.find(e=>e.id===g.eventId)}))
+      .filter(x=> (x.g.nombre+' '+(x.ev?x.ev.nombre:'')).toLowerCase().includes(term)).reverse();
+    if(usadas.length===0){ box.innerHTML='<div class="muted">Sin registros aún.</div>'; return; }
+    let html = '<div style="overflow:auto"><table class="table"><thead><tr><th>Nombre</th><th>Evento</th><th>Fecha de uso</th><th>Token</th><th></th></tr></thead><tbody>';
+    usadas.forEach(({g,ev})=>{
+      const usado = g.usedAt ? new Date(g.usedAt).toLocaleString() : '—';
+      html += `<tr>
+        <td>${escapeHtml(g.nombre)}</td>
+        <td>${ev?escapeHtml(ev.nombre):'—'}</td>
+        <td>${usado}</td>
+        <td class="muted">${g.token}</td>
+        <td><button class="btn ok" data-reactivar="${g.id}">Reactivar</button></td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>'; box.innerHTML = html;
+    box.querySelectorAll('button[data-reactivar]').forEach(b=> b.addEventListener('click', ()=> reactivarInvitacion(b.dataset.reactivar)));
+  }
+  async function reactivarInvitacion(guestId){
+    const g = state.guests.find(x=>x.id===guestId); if(!g) return;
+    if(state.mode==='cloud'){ try{ await colGuests().doc(guestId).update({used:false, usedAt:null}); }catch(e){ console.error(e); toast('Error al reactivar'); return; } }
+    else { g.used=false; g.usedAt=null; localSave(); }
+    renderCaducadas(); if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); }
+    toast('Invitación reactivada');
+  }
+
+  /* ====== Escaneo integrado ====== */
+  let stream=null, detector=null, rafId=null;
+  async function toggleScanner(){
+    const btn = document.getElementById('scanBtn');
+    if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
+    try{
+      // iOS/Android requieren HTTPS para getUserMedia
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      const video = document.getElementById('video'); video.srcObject = stream; await video.play();
+      document.getElementById('scanResultado').textContent = 'Cámara lista. Escaneando…';
+      if('BarcodeDetector' in window){
+        detector = new window.BarcodeDetector({formats:['qr_code']});
+        const loop = async()=>{
+          try{
+            const codes = await detector.detect(video);
+            if(codes && codes.length){ await handleScan(codes[0].rawValue); }
+          }catch(e){}
+          rafId = requestAnimationFrame(loop);
+        };
+        loop();
+      }else{
+        document.getElementById('scanResultado').innerHTML = 'Este navegador no soporta escaneo nativo. Usá "Ingreso manual".';
+      }
+      btn.textContent='Detener cámara';
+    }catch(err){ console.error(err); toast('No se pudo abrir la cámara'); }
+  }
+  async function stopScanner(){
+    if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    const video = document.getElementById('video'); video.srcObject=null; try{ video.pause(); }catch{}
+    document.getElementById('scanResultado').textContent='Cámara detenida';
+  }
+
+  // Escaneo: URL (?u,&g,&t) o token simple
+  async function handleScan(raw){
+    try{
+      const url = new URL(raw);
+      const u = url.searchParams.get('u'); const g = url.searchParams.get('g'); const t = url.searchParams.get('t');
+      if(u&&g&&t){ await checkinFromURL(u,g,t); return; }
+    }catch(_){}
+    // token directo (mismo owner logueado)
+    const code = (raw||'').trim();
+    const g = state.guests.find(x=>x.token===code);
+    if(!g){ setScanMsg('❌ QR/Token no válido'); return; }
+    if(state.ui.invitadosEventoActual && g.eventId!==state.ui.invitadosEventoActual){ setScanMsg('⛔ Pertenece a otro evento'); return; }
+    if(g.used){ setScanMsg(`⚠️ Ya usado por ${g.nombre}`); return; }
+    await marcarUsadoYMostrar(g);
+  }
+  function setScanMsg(msg){ document.getElementById('scanResultado').textContent=msg; }
+  function procesarManual(){ const v = document.getElementById('manualCode').value.trim(); if(!v) return; handleScan(v); }
+
+  // Check-in desde URL del QR
+  async function checkinFromURL(u,gid,token){
+    if(state.mode!=='cloud'){ setScanMsg('Modo local: usá el token directo'); return; }
+    if(!state.uid){ setScanMsg('Iniciá sesión para escanear'); return; }
+    if(state.uid !== u){ setScanMsg('⛔ Este QR pertenece a otra cuenta'); return; }
+    try{
+      const tokenHash = await sha256hex(decodeURIComponent(token||''));
+      const doc = await colPublic().doc(`${u}_${gid}`).get();
+      if(!doc.exists){ setScanMsg('❌ Enlace inválido'); return; }
+      const data = doc.data();
+      if(data.tokenHash !== tokenHash){ setScanMsg('⛔ Token incorrecto'); return; }
+      const gSnap = await colGuests().doc(gid).get();
+      if(!gSnap.exists){ setScanMsg('❌ Invitación no encontrada'); return; }
+      const guest = {id:gid, ...gSnap.data()};
+      if(state.ui.invitadosEventoActual && guest.eventId!==state.ui.invitadosEventoActual){ setScanMsg('⛔ Pertenece a otro evento'); return; }
+      if(guest.used){ setScanMsg(`⚠️ Ya usado por ${guest.nombre}`); return; }
+      await marcarUsadoYMostrar(guest);
+    }catch(e){ console.error(e); setScanMsg('⚠️ Error al validar'); }
+  }
+
+  async function marcarUsadoYMostrar(guest){
+    const ts = Date.now();
+    if(state.mode==='cloud'){ try{ await colGuests().doc(guest.id).update({used:true, usedAt:ts}); }catch(e){ console.error(e); toast('No se pudo marcar el ingreso'); return; } }
+    else { const g = state.guests.find(x=>x.id===guest.id); if(g){ g.used=true; g.usedAt=ts; } localSave(); renderCaducadas(); if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(guest.eventId); } }
+    const ev = state.events.find(e=>e.id===guest.eventId);
+    const themeKey = state.ui.flyerTheme || 'oro';
+    const dataUrl = await generarFlyerPNG({
+      invitado: guest.nombre, evento: ev?ev.nombre:'', token: guest.token, qrNode:null, seed: guest.token, themeKey, shareURL:'', mode:'name'
+    });
+    document.getElementById('checkinFlyerImg').src = dataUrl;
+    showModal();
+    setScanMsg(`✅ Bienvenido/a ${guest.nombre} — ${ev?ev.nombre:''}`);
+  }
+
+  /* ====== LANDING (validación pública) ====== */
+  async function validarDesdeLink(u,g,t){
+    if(state.mode!=='cloud'){
+      document.getElementById('landingMsg').innerHTML = 'Este QR pertenece a: <strong>modo local</strong>';
+      document.getElementById('landingDetail').textContent = 'Configura Firebase para landing público.';
+      document.getElementById('landing').classList.remove('hidden');
+      document.getElementById('auth').classList.add('hidden');
+      document.getElementById('app').classList.add('hidden');
+      return;
+    }
+    try{
+      const tokenHash = await sha256hex(decodeURIComponent(t||''));
+      const doc = await colPublic().doc(`${u}_${g}`).get();
+      if(!doc.exists){ showLanding('❌ Enlace no válido', 'No se encontró la invitación.'); return; }
+      const data = doc.data();
+      if(data.tokenHash !== tokenHash){ showLanding('⛔ Token incorrecto', 'El link no coincide.'); return; }
+      showLanding(`🎉 Hola <strong>${escapeHtml(data.nombre)}</strong>`, `Evento: <strong>${escapeHtml(data.eventName||'')}</strong>`);
+    }catch(e){
+      showLanding('⚠️ Error', 'No se pudo verificar el QR.');
+    }
+  }
+  function showLanding(titleHtml, detailHtml){
+    document.getElementById('landingMsg').innerHTML = titleHtml;
+    document.getElementById('landingDetail').innerHTML = detailHtml||'';
+    document.getElementById('landing').classList.remove('hidden');
+    document.getElementById('auth').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+
+  // Modal helpers
+  function showModal(){ const m=document.getElementById('modalCheckin'); m.style.display='flex'; }
+  function hideModal(){ const m=document.getElementById('modalCheckin'); m.style.display='none'; }
+
+  /* ====== Boot ====== */
+  window.addEventListener('load', ()=>{
+    // Accesos rápidos de teclado en PC
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape'){ hideModal(); }
+    });
+
+    // Tabs por data attr (landing)
+    document.querySelectorAll('[data-tab-target]').forEach(b=> b.addEventListener('click', ()=> showTab(b.dataset.tabTarget)));
+
+    // Si se abrió con parámetros de link (?u=&g=&t=) → landing
+    const sp = new URLSearchParams(location.search);
+    const u = sp.get('u'), g = sp.get('g'), t = sp.get('t');
+    if(u && g && t){ validarDesdeLink(u,g,t); }
+    else{
+      if(state.mode==='local'){ toast('Firebase no configurado: funcionando en modo local'); localLoad(); }
+      document.getElementById('auth').classList.toggle('hidden', !!state.user);
+      document.getElementById('app').classList.toggle('hidden', !state.user);
+    }
+  });
+  </script>
+</body>
+</html>
