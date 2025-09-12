@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Staff — Crear invitación</title>
+  <style>
+    body{font-family:system-ui,Arial,Helvetica,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;background:#faf7f2;color:#1f2937}
+    h1{font-size:22px;margin:12px 0}
+    label{display:block;margin-top:12px}
+    input{width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff}
+    button{margin-top:16px;padding:10px 14px;border:0;border-radius:12px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+    .ok{background:#f1d17a}
+    .card{background:#fff;border:1px solid #eee;border-radius:14px;padding:16px;margin-top:16px}
+    #qr{display:grid;place-items:center;margin-top:12px}
+    .mono{font-family:ui-monospace,Consolas,monospace}
+  </style>
+  <!-- Librería para generar QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+</head>
+<body>
+  <h1>Panel STAFF — Crear invitación</h1>
+
+  <form id="form">
+    <label>Nombre del invitado
+      <input id="nombre" required placeholder="Ej: Juan Pérez">
+    </label>
+    <label>Evento
+      <input id="evento" required placeholder="Ej: Cumpleaños de Ana">
+    </label>
+    <label>Fecha
+      <input id="fecha" required placeholder="Ej: 2025-09-20">
+    </label>
+    <button class="ok" type="submit">Crear invitación y generar QR</button>
+  </form>
+
+  <div id="resultado" class="card" style="display:none">
+    <div><strong>URL pública</strong></div>
+    <div id="url" class="mono"></div>
+    <div id="qr"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // 🔧 Pega aquí TU configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    // Iniciar sesión anónima para poder escribir en Firestore
+    await signInAnonymously(auth).catch(err => alert("Error auth: " + err.message));
+
+    const $ = s => document.querySelector(s);
+    const form = $("#form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = {
+        nombre: $("#nombre").value.trim(),
+        evento: $("#evento").value.trim(),
+        fecha:  $("#fecha").value.trim(),
+        creadoEn: new Date().toISOString()
+      };
+      try {
+        const ref = await addDoc(collection(db, "invitaciones"), data);
+        const urlPublica = `${location.origin}/Ok-QR/inv.html?id=${ref.id}`;
+        $("#resultado").style.display = "block";
+        $("#url").textContent = urlPublica;
+
+        // Generar el QR
+        const cont = document.getElementById("qr");
+        cont.innerHTML = "";
+        // @ts-ignore
+        new QRCode(cont, { text: urlPublica, width: 220, height: 220 });
+      } catch (err) {
+        alert("Error al crear la invitación: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
