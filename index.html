@@ -425,7 +425,12 @@ const mustHaveFirebase = !!(firebaseConfig && firebaseConfig.apiKey);
 /* ===== Utils ===== */
 const $ = (id)=>document.getElementById(id);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
-function escapeHtml(s){return (s||'').replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;","">":"&gt;","\"":"&quot;"}[c]));}
+// ✅ FIX: función correcta
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
+  }[c]));
+}
 function newToken(){return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();}
 
 /* Hash con fallback */
@@ -1057,8 +1062,7 @@ async function toggleScanner(){
     stream=await navigator.mediaDevices.getUserMedia({
       video:{
         width, height,
-        facingMode:{ideal:'environment'},
-        focusMode:'continuous'
+        facingMode:{ideal:'environment'}
       },
       audio:false
     });
