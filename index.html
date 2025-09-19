@@ -100,6 +100,8 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .color-pick input[type="color"]{width:38px;height:32px;border-radius:8px;border:1px solid rgba(0,0,0,.15);padding:0}
 .badge.succ{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
 .badge.warn{background:rgba(234,179,8,.15);border-color:rgba(234,179,8,.35);color:#713f12}
+.logo-row{display:flex;gap:8px;align-items:center}
+.logo-prev{width:120px;height:60px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;object-fit:contain;background:#fff}
 </style>
 </head>
 <body>
@@ -215,6 +217,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
               <div class="field" style="width:220px"><label>&nbsp;</label><button class="btn gold" id="registrarInvitadoBtn" type="button">Crear invitación + QR</button></div>
             </div>
 
+            <!-- Config flyer/QR -->
             <div id="qrPreview" class="hidden" style="margin-top:12px">
               <div class="grid two">
                 <div class="qr-box"><div id="qrCanvas" data-guest-id=""></div></div>
@@ -237,6 +240,14 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     <label class="mini">Texto <input type="color" id="txColorPick" value="#1f2937"></label>
                   </div>
 
+                  <!-- Logo -->
+                  <div class="logo-row">
+                    <label class="mini">Logo de la empresa:</label>
+                    <img id="logoPreview" class="logo-prev" alt="Logo" />
+                    <input id="logoFile" type="file" accept="image/*" />
+                    <button class="btn ghost" id="clearLogoBtn" type="button">Quitar logo</button>
+                  </div>
+
                   <div>
                     <strong id="qrNombre"></strong>
                     <div class="mini">Evento: <span id="qrEvento"></span></div>
@@ -251,6 +262,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                 </div>
               </div>
             </div>
+            <!-- /Config flyer/QR -->
 
           </div>
         </div>
@@ -335,9 +347,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 </div>
 
 <script>
-/* ===== LOGO incrustado (el que me pasaste) ===== */
-const COMPANY_LOGO = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpL...SNIP...(cortado por brevedad en este editor)";
-
 /* ===== Firebase ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBoQwu1L04BRGVFgUlbebSEjwMFL87lSQE",
@@ -355,7 +364,15 @@ const state = {
   uid:null,
   events:[],
   guests:[],
-  ui:{ currentTab:'eventos', invitadosEventoActual:null, flyerTheme:'oro', lastGuestId:null, bgColor:'#ffffff', txColor:'#1f2937' },
+  ui:{
+    currentTab:'eventos',
+    invitadosEventoActual:null,
+    flyerTheme:'oro',
+    lastGuestId:null,
+    bgColor:'#ffffff',
+    txColor:'#1f2937',
+    logoDataUrl: localStorage.getItem('fq_logo') || null
+  },
   flyers:{ lastDataUrl:null }
 };
 let db=null, auth=null;
@@ -471,6 +488,7 @@ document.addEventListener('click',(e)=>{
   if(t.id==='fabScan'){showTab('escanear'); setTimeout(()=>toggleScanner(),200);}
   if(t.id==='modalCloseBtn'||t.id==='modalCheckin') hideModal();
   if(t.id==='torchBtn') toggleTorch();
+  if(t.id==='clearLogoBtn') clearLogo();
 });
 document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
@@ -478,13 +496,18 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
   if(e.target.id==='flyerThemeSel'){
     state.ui.flyerTheme=e.target.value;
-    const gid=$('qrCanvas')?.dataset?.guestId; if(gid){ const g=state.guests.find(x=>x.id===gid); if(g){ pintarFlyer(g); } }
+    repaintCurrentFlyer();
   }
-  if(e.target.id==='bgColorPick'){ state.ui.bgColor=e.target.value; const gid=$('qrCanvas')?.dataset?.guestId; if(gid){ const g=state.guests.find(x=>x.id===gid); if(g){ pintarFlyer(g); } } }
-  if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; const gid=$('qrCanvas')?.dataset?.guestId; if(gid){ const g=state.guests.find(x=>x.id===gid); if(g){ pintarFlyer(g); } } }
+  if(e.target.id==='bgColorPick'){ state.ui.bgColor=e.target.value; repaintCurrentFlyer(); }
+  if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; repaintCurrentFlyer(); }
+  if(e.target.id==='logoFile'){ handleLogoUpload(e.target.files?.[0]); }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
+function repaintCurrentFlyer(){
+  const gid=$('qrCanvas')?.dataset?.guestId; if(!gid) return;
+  const g=state.guests.find(x=>x.id===gid); if(g) pintarFlyer(g);
+}
 function syncUIAuth(){
   const logged = !!state.user;
   $('auth').classList.toggle('hidden', logged ? true : false && !mustHaveFirebase);
@@ -497,6 +520,8 @@ function syncUIAuth(){
     renderEventos();
     renderInvitadosRecientes();
     renderCaducadas();
+    // restaurar logo si existía
+    updateLogoPreview();
   }
   $('modeBadge').textContent = 'cloud';
 }
@@ -620,10 +645,9 @@ function buildShareURL(g){
   return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`;
 }
 
-/* ======== QR GENERATION (ROBUSTO) ======== */
+/* ======== QR GENERATION helpers ======== */
 async function makeQR(el, text, size = 240){
   el.innerHTML = '';
-  // 1) Intento lib local (qrcode)
   try {
     const ok = await (window.qrLibReady || Promise.resolve(false));
     if (ok && window.QRCode?.toCanvas) {
@@ -642,17 +666,11 @@ async function makeQR(el, text, size = 240){
     }
   } catch(_) {}
 
-  // 2) Fallback externo (PNG) — asegura visualización
-  const api = 'https://api.qrserver.com/v1/create-qr-code/';
-  const url = `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
-  const img = document.createElement('img');
-  img.alt = 'QR'; img.width = img.height = size; img.src = url;
-  img.setAttribute('data-external','1'); // Para descarga
+  // Fallback externo (PNG)
+  const img = await externalQRImage(text, size);
   el.appendChild(img);
   return img;
 }
-
-/* Genera un canvas QR SOLO usando la lib local (para embebido en flyer) */
 async function makeLocalQRCanvas(text, size=260){
   try{
     const ok = await (window.qrLibReady || Promise.resolve(false));
@@ -666,7 +684,26 @@ async function makeLocalQRCanvas(text, size=260){
       return c;
     }
   }catch(_){}
-  return null; // si no hay lib local, no puedo embebido seguro (CORS)
+  return null;
+}
+function externalQRImageSrc(text,size){
+  const api = 'https://api.qrserver.com/v1/create-qr-code/';
+  return `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
+}
+function externalQRImage(text,size){
+  return new Promise((res,rej)=>{
+    const img = document.createElement('img');
+    img.alt='QR'; img.width=img.height=size;
+    img.crossOrigin='anonymous';
+    img.src = externalQRImageSrc(text,size);
+    img.onload=()=>res(img); img.onerror=rej;
+  });
+}
+async function externalQRCanvas(text,size=260){
+  const img = await externalQRImage(text,size);
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  c.getContext('2d').drawImage(img,0,0,size,size);
+  return c;
 }
 
 function mostrarInvitacion(guest){
@@ -680,12 +717,34 @@ function mostrarInvitacion(guest){
   pintarFlyer(guest);
 }
 
-/* ===== Logo helper ===== */
-function loadLogo(){
-  return new Promise((res)=>{ const img=new Image(); img.onload=()=>res(img); img.src=COMPANY_LOGO; });
+/* ===== Logo (subir/quitar) ===== */
+function updateLogoPreview(){
+  const prev=$('logoPreview');
+  if(!prev) return;
+  if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
+  else { prev.src=''; prev.classList.add('hidden'); }
+}
+function handleLogoUpload(file){
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload = ()=>{
+    state.ui.logoDataUrl = reader.result;
+    localStorage.setItem('fq_logo', state.ui.logoDataUrl);
+    updateLogoPreview();
+    repaintCurrentFlyer();
+    toast('Logo actualizado ✔️');
+  };
+  reader.readAsDataURL(file);
+}
+function clearLogo(){
+  state.ui.logoDataUrl=null;
+  localStorage.removeItem('fq_logo');
+  updateLogoPreview();
+  repaintCurrentFlyer();
+  toast('Logo quitado');
 }
 
-/* ===== Flyer con temas, QR embebido y LOGO ===== */
+/* ===== Flyer ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
@@ -695,44 +754,41 @@ async function pintarFlyer(guest){
   const c=document.createElement('canvas'); c.width=1200; c.height=675; // 16:9
   const ctx=c.getContext('2d');
 
-  // Fondo por tema o color manual
+  // Fondo (temas o personalizado)
   if(theme==='oro'){
     const g=ctx.createLinearGradient(0,0,0,c.height);
     g.addColorStop(0,'#fff7d1'); g.addColorStop(.55,'#f5d777'); g.addColorStop(1,'#d4af37');
     ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
     ctx.fillStyle='rgba(0,0,0,.08)'; for(let i=0;i<18;i++){ctx.fillRect(70*i,0,1,c.height);}
-    ctx.fillStyle='#2a1f0b';
   } else if(theme==='plata'){
     const g=ctx.createLinearGradient(0,0,c.width,0);
     g.addColorStop(0,'#f5f7fa'); g.addColorStop(1,'#cfd8dc');
     ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
     ctx.fillStyle='rgba(0,0,0,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);}
-    ctx.fillStyle='#263238';
   } else if(theme==='noche'){
     const g=ctx.createLinearGradient(0,0,0,c.height);
     g.addColorStop(0,'#0b1020'); g.addColorStop(1,'#1f2937');
     ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
     ctx.fillStyle='rgba(255,255,255,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);}
-    ctx.fillStyle='#f3f4f6';
   } else {
-    // tema custom (por si a futuro lo cambiás)
     ctx.fillStyle = bgPick || '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
-    ctx.fillStyle = txPick || '#1f2937';
   }
 
+  // Color de texto
+  ctx.fillStyle = (theme==='noche') ? '#f3f4f6' : (txPick || '#1f2937');
+
   // Título
-  ctx.fillStyle = txPick || ctx.fillStyle;
   ctx.font='800 46px "Poppins",sans-serif';
   ctx.fillText('ESTÁS INVITADO/A A', 60, 110);
 
   // Evento
   ctx.font='900 72px "Poppins",sans-serif';
   const evName = ev ? ev.nombre : '';
-  ctx.fillText(evName, 60, 190);
+  wrapText(ctx, evName, 60, 190, 680, 72);
 
   // Invitado
   ctx.font='700 40px "Poppins",sans-serif';
-  ctx.fillText(`Invitado/a: ${guest.nombre}`, 60, 260);
+  wrapText(ctx, `Invitado/a: ${guest.nombre}`, 60, 260, 680, 40);
 
   // Token
   ctx.font='600 34px "Poppins",sans-serif';
@@ -742,18 +798,18 @@ async function pintarFlyer(guest){
   ctx.font='500 26px "Poppins",sans-serif';
   ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 370);
 
-  // Adorno suave
-  ctx.globalAlpha = 0.08;
-  ctx.fillRect(60, 420, 1080, 160);
+  // Franja inferior (para logo) — zona "azul"
+  const barY = c.height - 130;
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = (theme==='noche')?'#000':'#000';
+  ctx.fillRect(40, barY, c.width-80, 90);
   ctx.globalAlpha = 1;
 
-  // QR embebido (preferir canvas local)
+  // QR SIEMPRE — zona "verde"
   const url=buildShareURL(guest);
   let qrCan = await makeLocalQRCanvas(url, 260);
   if(!qrCan){
-    // Si la lib no está, intento tomar el canvas visible
-    const node=$('qrCanvas')?.querySelector('canvas');
-    if(node){ qrCan=node; }
+    try{ qrCan = await externalQRCanvas(url, 260); }catch(_){}
   }
   const qrX = c.width - 60 - 260;
   const qrY = 60;
@@ -766,39 +822,52 @@ async function pintarFlyer(guest){
     roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
     ctx.restore();
     ctx.drawImage(qrCan, qrX, qrY, 260, 260);
-  }else{
-    // Marcador si no hay QR embebible (muy raro con la lib cargada)
+  } else {
+    // Último recurso: aviso
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
     roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,.5)';
-    ctx.font='800 32px "Poppins",sans-serif';
-    ctx.fillText('QR', qrX+100, qrY+140);
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font='800 28px "Poppins",sans-serif';
+    wrapText(ctx,'QR no disponible', qrX+40, qrY+120, 200, 28, 34);
     ctx.restore();
   }
 
-  // LOGO de empresa (adaptado)
-  const logoImg = await loadLogo();
-  const logoMaxW = 360, logoMaxH = 120;
-  let w = logoImg.naturalWidth, h = logoImg.naturalHeight;
-  const ratio = Math.min(logoMaxW/w, logoMaxH/h);
-  w = Math.round(w*ratio); h = Math.round(h*ratio);
-
-  const logoX = 60;
-  const logoY = c.height - h - 40;
-
-  // Plaquita para contraste
-  ctx.save();
-  ctx.fillStyle = 'rgba(255,255,255,.85)';
-  if(theme==='plata') ctx.fillStyle='rgba(0,0,0,.6)';
-  if(theme==='noche') ctx.fillStyle='rgba(255,255,255,.12)';
-  roundRect(ctx, logoX-18, logoY-18, w+36, h+36, 18); ctx.fill();
-  ctx.restore();
-
-  ctx.drawImage(logoImg, logoX, logoY, w, h);
+  // LOGO (desde localStorage si hay)
+  if(state.ui.logoDataUrl){
+    try{
+      const img = await loadImage(state.ui.logoDataUrl);
+      const maxW = 360, maxH = 70;
+      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+      const r = Math.min(maxW/w, maxH/h);
+      w=Math.round(w*r); h=Math.round(h*r);
+      const lx = 60, ly = barY + Math.round((90 - h)/2);
+      ctx.drawImage(img, lx, ly, w, h);
+    }catch(e){ console.warn('Logo invalido', e); }
+  }else{
+    // texto de marca si no hay logo subido
+    ctx.save();
+    ctx.fillStyle=(theme==='noche')?'#f3f4f6':'#111827';
+    ctx.font='800 42px "Poppins",sans-serif';
+    ctx.fillText('OK EVENTOS', 60, barY+60);
+    ctx.restore();
+  }
 
   state.flyers.lastDataUrl=c.toDataURL('image/png');
   $('checkinFlyerImg').src=state.flyers.lastDataUrl;
+}
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, lineGap=12){
+  const words = String(text||'').split(' ');
+  let line='', yy=y;
+  for(let n=0;n<words.length;n++){
+    const test=line+words[n]+' ';
+    if(ctx.measureText(test).width > maxWidth && n>0){
+      ctx.fillText(line, x, yy);
+      line=words[n]+' ';
+      yy+=lineHeight+lineGap;
+    } else line=test;
+  }
+  ctx.fillText(line, x, yy);
 }
 function roundRect(ctx, x, y, w, h, r){
   const rr = Math.min(r, w/2, h/2);
@@ -810,6 +879,9 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x,y,x+w,y,rr);
   ctx.closePath();
 }
+function loadImage(src){
+  return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; });
+}
 
 /* Descargar QR / Imprimir */
 function descargarQR(){
@@ -820,15 +892,17 @@ function descargarQR(){
   if(node.tagName.toLowerCase()==='canvas'){
     const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.toDataURL('image/png'); a.click(); return;
   }
-  if(node.tagName.toLowerCase()==='img' && node.getAttribute('data-external')==='1'){
+  if(node.tagName.toLowerCase()==='img'){
+    try{
+      // re-rasterizo para asegurar descarga local
+      const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h;
+      const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=c.toDataURL('image/png'); a.click();
+      }; img.src=node.src;
+      return;
+    }catch(_){}
     const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.src; a.click(); return;
-  }
-  try{
-    const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h;
-    c.getContext('2d').drawImage(node,0,0,w,h);
-    const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=c.toDataURL('image/png'); a.click();
-  }catch(e){
-    window.open(node.src,'_blank');
   }
 }
 function imprimirQR(){
@@ -950,7 +1024,7 @@ async function reactivarInvitacion(guestId){
   catch(e){ console.error(e); toast('Error al reactivar'); }
 }
 
-/* ===== Escaneo (rápido y robusto) ===== */
+/* ===== Escaneo ===== */
 let stream=null, barcodeReader=null, rafId=null, detector=null, torchOn=false, track=null;
 async function toggleScanner(){
   const btn=$('scanBtn'); const hint=$('cameraHint');
@@ -989,9 +1063,7 @@ async function toggleScanner(){
           canvas.width = video.videoWidth; canvas.height = video.videoHeight;
           ctx.drawImage(video,0,0,canvas.width,canvas.height);
           const codes=await detector.detect(canvas);
-          if(codes && codes.length){
-            await handleScan(codes[0].rawValue);
-          }
+          if(codes && codes.length){ await handleScan(codes[0].rawValue); }
         }catch(_){}
         rafId=requestAnimationFrame(loop);
       }; loop();
