@@ -13,13 +13,33 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-<!-- Generar QR -->
+<!-- Generar QR (QRCode v1.5.3) -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <!-- Leer QR (fallback ZXing) -->
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 
+<!-- Fallback robusto de carga para la librería QR (por si el CDN principal falla) -->
+<script>
+(function ensureQRCodeLib(){
+  if (window.QRCode && (QRCode.toCanvas || QRCode.CorrectLevel)) return;
+  function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+  (async ()=>{
+    const cdns=[
+      "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"
+    ];
+    for (const url of cdns){ try{ await loadScript(url); if (window.QRCode) break; }catch(_){ } }
+    if(!window.QRCode){ console.error("No se pudo cargar la librería QR"); }
+  })();
+})();
+</script>
+
 <style>
-:root{--bg:#F5F4F0;--panel:#FAF9F6;--card:#FFFFFF;--text:#1f2937;--muted:#6B7280;--gold:#d4af37;--ok:#22c55e;--danger:#ef4444;--radius:16px;--shadow:0 8px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.05);--border:1px solid rgba(0,0,0,.08)}
+:root{
+  --bg:#F5F4F0;--panel:#FAF9F6;--card:#FFFFFF;--text:#1f2937;--muted:#6B7280;--gold:#d4af37;
+  --ok:#22c55e;--danger:#ef4444;--radius:16px;--shadow:0 8px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.05);
+  --border:1px solid rgba(0,0,0,.08)
+}
 *{box-sizing:border-box} html,body{height:100%}
 body{margin:0;background:linear-gradient(180deg,var(--panel),var(--bg));color:var(--text);font-family:"Poppins",system-ui,Segoe UI,Roboto,sans-serif}
 img{max-width:100%;display:block}
@@ -68,6 +88,11 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#111827;color:#f9fafb;border:1px solid rgba(0,0,0,.2);padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);z-index:100}
 .actions .btn{padding:8px 10px;font-size:.85rem}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
+.theme-row{display:flex;gap:8px;align-items:center;margin:6px 0}
+.theme-dot{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.theme-oro{background:linear-gradient(180deg,#f8e38c,#d4af37)}
+.theme-plata{background:linear-gradient(180deg,#f5f7fa,#cfd8dc)}
+.theme-noche{background:linear-gradient(180deg,#1f2937,#0b1020)}
 </style>
 </head>
 <body>
@@ -94,7 +119,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
   <!-- AUTENTICACIÓN -->
   <section id="auth" class="hidden">
     <div class="grid two">
-      <!-- LOGIN -->
       <div class="card">
         <div class="card-h"><strong>Iniciar sesión</strong></div>
         <div class="card-c">
@@ -110,7 +134,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
         </div>
       </div>
 
-      <!-- REGISTRO -->
       <div class="card">
         <div class="card-h"><strong>Registración</strong></div>
         <div class="card-c">
@@ -189,6 +212,17 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
               <div class="grid two">
                 <div class="qr-box"><div id="qrCanvas" data-guest-id=""></div></div>
                 <div class="grid">
+                  <div class="theme-row">
+                    <label class="mini">Tema flyer:</label>
+                    <select id="flyerThemeSel">
+                      <option value="oro">Oro</option>
+                      <option value="plata">Plata</option>
+                      <option value="noche">Noche</option>
+                    </select>
+                    <span class="theme-dot theme-oro" title="Oro"></span>
+                    <span class="theme-dot theme-plata" title="Plata"></span>
+                    <span class="theme-dot theme-noche" title="Noche"></span>
+                  </div>
                   <div>
                     <strong id="qrNombre"></strong>
                     <div class="mini">Evento: <span id="qrEvento"></span></div>
@@ -198,6 +232,8 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                   <div class="row">
                     <button class="btn ok" id="descargarQRBtn" type="button">Descargar PNG (QR)</button>
                     <button class="btn ghost" id="imprimirQRBtn" type="button">Imprimir QR</button>
+                    <!-- NUEVO: botón descargar flyer -->
+                    <button class="btn gold" id="descargarFlyerBtn" type="button">Descargar Flyer (PNG)</button>
                   </div>
                 </div>
               </div>
@@ -242,11 +278,11 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
           <div class="row" style="margin-top:12px;align-items:center">
             <div class="field" style="flex:1 1 260px">
               <label>Ingreso manual (token o URL del QR)</label>
-              <input id="manualCode" placeholder='Pegá el TOKEN (ABCD-1F2G) o el enlace con ?u=&g=&t=' />
+              <input id="manualCode" placeholder='Pega el TOKEN (ABCD-1F2G) o el enlace con ?u=&g=&t=' />
             </div>
             <div class="field" style="width:200px"><label>&nbsp;</label><button class="btn ok" id="validarManualBtn" type="button">Validar</button></div>
           </div>
-          <div class="help">Tip: la cámara requiere HTTPS o localhost.</div>
+          <div class="help">Tip: la camara requiere HTTPS o localhost.</div>
 
           <div id="scanResultado" style="margin-top:12px" class="mini muted">Estado: esperando…</div>
         </div>
@@ -273,31 +309,36 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 </div>
 
 <script>
-/* =================== CONFIG FIREBASE (OBLIGATORIO) =================== */
+/* ===== Firebase ===== */
 const firebaseConfig = {
   apiKey: "AIzaSyBoQwu1L04BRGVFgUlbebSEjwMFL87lSQE",
   authDomain: "ok-invitaciones.firebaseapp.com",
   projectId: "ok-invitaciones",
-  storageBucket: "ok-invitaciones.firebasestorage.app",  
+  storageBucket: "ok-invitaciones.firebasestorage.app",
   messagingSenderId: "552768626682",
   appId: "1:552768626682:web:6b0b9b275e746f8fb00e43",
   measurementId: "G-Q2DT9HK5PN"
 };
 
-/* ===================================================================== */
-
-/* ===== Estado global ===== */
-const state={user:null,uid:null,events:[],guests:[],ui:{currentTab:'eventos',invitadosEventoActual:null,flyerTheme:'oro',lastGuestId:null},flyers:{lastDataUrl:null}};
-let db=null,auth=null;
+/* ===== Estado ===== */
+const state = {
+  user:null,
+  uid:null,
+  events:[],
+  guests:[],
+  ui:{ currentTab:'eventos', invitadosEventoActual:null, flyerTheme:'oro', lastGuestId:null },
+  flyers:{ lastDataUrl:null }
+};
+let db=null, auth=null;
 const mustHaveFirebase = !!(firebaseConfig && firebaseConfig.apiKey);
 
 /* ===== Utils ===== */
-function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2400);}
+const $ = (id)=>document.getElementById(id);
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
 function escapeHtml(s){return (s||'').replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
-function uid(){return crypto.randomUUID?crypto.randomUUID():'id-'+Math.random().toString(36).slice(2);}
 function newToken(){return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();}
 
-/* Fallback de hash si no hay HTTPS/crypto.subtle */
+/* Hash con fallback (si no hay HTTPS/crypto.subtle) */
 async function sha256hex(str){
   try{
     if (window.isSecureContext && crypto?.subtle){
@@ -306,11 +347,9 @@ async function sha256hex(str){
       return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
     }
   }catch(_){}
-  // Fallback no-HTTPS (no criptográfico): evita romper el flujo
   let h=0; for (let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; }
   return ('00000000'+(h>>>0).toString(16)).slice(-8);
 }
-
 function emailValido(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||'').trim());}
 
 /* ===== Firestore refs ===== */
@@ -321,10 +360,8 @@ const colPublic=()=>db.collection('public_guests');
 /* ===== Init Cloud ===== */
 async function initCloud(){
   if(!mustHaveFirebase){
-    document.getElementById('needFirebase').classList.remove('hidden');
-    document.getElementById('auth').classList.add('hidden');
-    document.getElementById('app').classList.add('hidden');
-    return;
+    $('needFirebase').classList.remove('hidden');
+    $('auth').classList.add('hidden'); $('app').classList.add('hidden'); return;
   }
   if(!firebase?.apps?.length) firebase.initializeApp(firebaseConfig);
   auth=firebase.auth(); db=firebase.firestore();
@@ -332,14 +369,13 @@ async function initCloud(){
   auth.onAuthStateChanged(async(user)=>{
     state.user=user||null; state.uid=user?user.uid:null; syncUIAuth(); if(user){await cloudSubscribe();}
   });
-  document.getElementById('auth').classList.remove('hidden');
+  $('auth').classList.remove('hidden');
 
-  // Bind forms PC/Móvil
-  document.getElementById('loginForm').addEventListener('submit',onLoginSubmit);
-  document.getElementById('regForm').addEventListener('submit',onRegisterSubmit);
+  $('loginForm').addEventListener('submit',onLoginSubmit);
+  $('regForm').addEventListener('submit',onRegisterSubmit);
 }
 
-/* ====== Auth helpers ====== */
+/* ===== Auth helpers ===== */
 function setBusy(btn,isBusy,labelBusy,orig){btn.disabled=!!isBusy; btn.textContent=isBusy?labelBusy:orig;}
 function presentAuthError(where, err){
   console.error(err);
@@ -351,47 +387,46 @@ function presentAuthError(where, err){
     'auth/wrong-password':'Contraseña incorrecta.',
     'auth/network-request-failed':'Sin conexión o bloqueado por red.',
     'auth/operation-not-allowed':'Habilitá "Email/Password" en Firebase Authentication.',
-    'auth/domain-not-allowed':'Agregá este dominio en Authentication → Settings → Authorized domains.',
+    'auth/domain-not-allowed':'Agregá este dominio en Authorized domains.',
     'auth/too-many-requests':'Demasiados intentos. Probá más tarde.',
     'auth/app-not-authorized':'Dominio no autorizado para esta app.',
     'auth/invalid-api-key':'apiKey inválida en firebaseConfig.'
   };
   const msg = map[err?.code] || 'No se pudo completar la operación.';
-  const extra = err?.code ? ` [${err.code}]` : '';
-  const el=document.getElementById(where);
-  if(el){el.textContent = msg + extra; el.style.color='#b91c1c';}
+  const el=$(where);
+  if(el){el.textContent = msg; el.style.color='#b91c1c';}
   toast(msg);
 }
 
-/* ====== Registro / Login ====== */
+/* ===== Registro / Login ===== */
 async function onRegisterSubmit(e){
   e.preventDefault();
-  const email=(document.getElementById('regEmail').value||'').trim().toLowerCase();
-  const pass =document.getElementById('regPass').value||'';
-  const btn=document.getElementById('registerBtn');
-  const hint=document.getElementById('authHintReg'); hint.textContent='';
+  const email=($('regEmail').value||'').trim().toLowerCase();
+  const pass =$('regPass').value||'';
+  const btn=$('registerBtn');
+  $('authHintReg').textContent='';
   if(!emailValido(email)) return presentAuthError('authHintReg',{code:'auth/invalid-email'});
   if(pass.length<6) return presentAuthError('authHintReg',{code:'auth/weak-password'});
   const orig=btn.textContent; setBusy(btn,true,'Creando…',orig);
-  try{ await auth.createUserWithEmailAndPassword(email, pass); hint.style.color='#065f46'; hint.textContent='Cuenta creada ✔️'; toast('Cuenta creada ✔️'); }
+  try{ await auth.createUserWithEmailAndPassword(email, pass); $('authHintReg').style.color='#065f46'; $('authHintReg').textContent='Cuenta creada ✔️'; toast('Cuenta creada ✔️'); }
   catch(err){ presentAuthError('authHintReg',err); }
   finally{ setBusy(btn,false,'',orig); }
 }
 async function onLoginSubmit(e){
   e.preventDefault();
-  const email=(document.getElementById('loginEmail').value||'').trim().toLowerCase();
-  const pass =document.getElementById('loginPass').value||'';
-  const btn=document.getElementById('loginBtn');
-  const hint=document.getElementById('authHintLogin'); hint.textContent='';
+  const email=($('loginEmail').value||'').trim().toLowerCase();
+  const pass =$('loginPass').value||'';
+  const btn=$('loginBtn');
+  $('authHintLogin').textContent='';
   if(!emailValido(email)) return presentAuthError('authHintLogin',{code:'auth/invalid-email'});
   const orig=btn.textContent; setBusy(btn,true,'Ingresando…',orig);
-  try{ await auth.signInWithEmailAndPassword(email, pass); hint.style.color='#065f46'; hint.textContent='Bienvenido 👋'; toast('Bienvenido 👋'); }
+  try{ await auth.signInWithEmailAndPassword(email, pass); $('authHintLogin').style.color='#065f46'; $('authHintLogin').textContent='Bienvenido 👋'; toast('Bienvenido 👋'); }
   catch(err){ presentAuthError('authHintLogin',err); }
   finally{ setBusy(btn,false,'',orig); }
 }
 function logout(){ try{auth.signOut();}catch{} }
 
-/* ====== UI ====== */
+/* ===== UI ===== */
 document.addEventListener('click',(e)=>{
   const t=e.target;
   if(t.closest('.tab')) showTab(t.closest('.tab').dataset.tab);
@@ -400,6 +435,7 @@ document.addEventListener('click',(e)=>{
   if(t.id==='registrarInvitadoBtn') registrarInvitado();
   if(t.id==='descargarQRBtn') descargarQR();
   if(t.id==='imprimirQRBtn') imprimirQR();
+  if(t.id==='descargarFlyerBtn') descargarFlyer(); // NUEVO
   if(t.id==='buscarInvitadosBtn') filtrarInvitadosActual();
   if(t.id==='scanBtn') toggleScanner();
   if(t.id==='validarManualBtn') procesarManual();
@@ -410,15 +446,18 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
   if(e.target.id==='buscarCad') renderCaducadas();
   if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
+  if(e.target.id==='flyerThemeSel'){ state.ui.flyerTheme=e.target.value;
+    const gid=$('qrCanvas')?.dataset?.guestId; if(gid){ const g=state.guests.find(x=>x.id===gid); if(g){ pintarFlyer(g); } }
+  }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
 function syncUIAuth(){
   const logged = !!state.user;
-  document.getElementById('auth').classList.toggle('hidden', logged ? true : false && !mustHaveFirebase);
-  document.getElementById('app').classList.toggle('hidden', !logged);
-  document.getElementById('userBar').classList.toggle('hidden', !logged);
-  document.getElementById('userEmail').textContent = logged ? (state.user.email || '') : '';
+  $('auth').classList.toggle('hidden', logged ? true : false && !mustHaveFirebase);
+  $('app').classList.toggle('hidden', !logged);
+  $('userBar').classList.toggle('hidden', !logged);
+  $('userEmail').textContent = logged ? (state.user.email || '') : '';
   if (logged) {
     showTab(state.ui.currentTab || 'eventos');
     refrescarCombos();
@@ -426,22 +465,21 @@ function syncUIAuth(){
     renderInvitadosRecientes();
     renderCaducadas();
   }
-  document.getElementById('modeBadge').textContent = 'cloud';
+  $('modeBadge').textContent = 'cloud';
 }
 
-
-/* ===== Subscripción tiempo real ===== */
+/* ===== Suscripciones ===== */
 let unsubEvents=null,unsubGuests=null;
 async function cloudSubscribe(){
   if(unsubEvents)unsubEvents(); if(unsubGuests)unsubGuests();
   unsubEvents=colEvents().onSnapshot(snap=>{
     state.events=snap.docs.map(d=>({id:d.id,...d.data()}));
-    refrescarCombos();renderEventos();renderInvitadosRecientes();
+    refrescarCombos(); renderEventos(); renderInvitadosRecientes();
     if(state.ui.invitadosEventoActual){renderInvitadosDeEvento(state.ui.invitadosEventoActual);}
   },console.error);
   unsubGuests=colGuests().onSnapshot(snap=>{
     state.guests=snap.docs.map(d=>({id:d.id,...d.data()}));
-    renderInvitadosRecientes();renderCaducadas();
+    renderInvitadosRecientes(); renderCaducadas();
     if(state.ui.invitadosEventoActual){renderInvitadosDeEvento(state.ui.invitadosEventoActual);}
   },console.error);
 }
@@ -450,24 +488,24 @@ async function cloudSubscribe(){
 function showTab(tab){
   state.ui.currentTab=tab;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-  document.getElementById('vista-eventos').classList.toggle('hidden',tab!=='eventos');
-  document.getElementById('vista-invitados').classList.toggle('hidden',tab!=='invitados');
-  document.getElementById('vista-caducadas').classList.toggle('hidden',tab!=='caducadas');
-  document.getElementById('vista-escanear').classList.toggle('hidden',tab!=='escanear');
+  $('vista-eventos').classList.toggle('hidden',tab!=='eventos');
+  $('vista-invitados').classList.toggle('hidden',tab!=='invitados');
+  $('vista-caducadas').classList.toggle('hidden',tab!=='caducadas');
+  $('vista-escanear').classList.toggle('hidden',tab!=='escanear');
 }
 
 /* ===== Eventos ===== */
 async function crearEvento(){
-  const nombre=(document.getElementById('evNombre').value||'').trim();
-  const fecha=(document.getElementById('evFecha').value||'');
+  const nombre=($('evNombre').value||'').trim();
+  const fecha=($('evFecha').value||'');
   if(!nombre) return toast('Poné un nombre para el evento');
   const ev={nombre,fecha,finalizado:false};
   try{ await colEvents().add(ev); toast('Evento creado'); }
   catch(e){ console.error(e); toast('No se pudo crear'); }
-  document.getElementById('evNombre').value=''; document.getElementById('evFecha').value='';
+  $('evNombre').value=''; $('evFecha').value='';
 }
 function renderEventos(){
-  const cont=document.getElementById('listaEventos'); cont.innerHTML='';
+  const cont=$('listaEventos'); cont.innerHTML='';
   if(state.events.length===0){cont.innerHTML='<div class="muted">No hay eventos todavía.</div>'; return;}
   state.events.slice().reverse().forEach(ev=>{
     const total=state.guests.filter(g=>g.eventId===ev.id).length;
@@ -498,40 +536,34 @@ async function toggleFinalizado(id){
   try{ await colEvents().doc(id).update({finalizado:!ev.finalizado}); toast(!ev.finalizado?'Evento finalizado':'Evento reabierto'); }
   catch(e){ console.error(e); toast('Error al actualizar'); }
 }
-function abrirBuscadorEvento(eventId){ const sel=document.getElementById('buscarEventoSel'); sel.value=eventId; renderInvitadosDeEvento(eventId); showTab('eventos'); }
+function abrirBuscadorEvento(eventId){ const sel=$('buscarEventoSel'); sel.value=eventId; renderInvitadosDeEvento(eventId); showTab('eventos'); }
 function refrescarCombos(){
   const opts=state.events.map(e=>`<option value="${e.id}">${escapeHtml(e.nombre)}</option>`).join('');
-  const invEvento=document.getElementById('invEvento');
-  const buscarEventoSel=document.getElementById('buscarEventoSel');
-  const scanEvento=document.getElementById('scanEvento');
-  if(invEvento) invEvento.innerHTML = `<option value="">Elegí un evento…</option>${opts}`;
-  if(buscarEventoSel) buscarEventoSel.innerHTML = `<option value="">Seleccioná…</option>${opts}`;
-  if(scanEvento) scanEvento.innerHTML = `<option value="">(Cualquiera)</option>${opts}`;
+  $('invEvento').innerHTML = `<option value="">Elegí un evento…</option>${opts}`;
+  $('buscarEventoSel').innerHTML = `<option value="">Seleccioná…</option>${opts}`;
+  $('scanEvento').innerHTML = `<option value="">(Cualquiera)</option>${opts}`;
 }
 
 /* ===== Invitados + QR ===== */
 async function registrarInvitado(){
-  const nombre=(document.getElementById('invNombre').value||'').trim();
-  const eventId=document.getElementById('invEvento').value;
+  const nombre=($('invNombre').value||'').trim();
+  const eventId=$('invEvento').value;
   if(!nombre) return toast('Escribí el nombre del invitado');
   if(!eventId) return toast('Elegí el evento');
 
-  // token único
   let token; do{ token=newToken(); } while(state.guests.some(g=>g.token===token));
   const guest={nombre,eventId,token,used:false,usedAt:null};
 
   try{
-    // 1) creo el invitado (fundamental para poder generar QR)
     const docRef=await colGuests().add(guest);
     const gid=docRef.id;
     state.ui.lastGuestId=gid;
-    document.getElementById('invNombre').value='';
+    $('invNombre').value='';
 
-    // 2) muestro el QR inmediatamente (aunque falle public_guests)
     mostrarInvitacion({id:gid,...guest});
     toast('Invitación creada ✔️');
 
-    // 3) intento registrar hash público (no crítico)
+    // Public hash (no bloqueante)
     (async()=>{
       try{
         const ev=state.events.find(e=>e.id===eventId);
@@ -544,36 +576,112 @@ async function registrarInvitado(){
         toast('Aviso: validación por enlace deshabilitada (reglas/HTTPS). El QR igual funciona.');
       }
     })();
-
   }catch(e){
     console.error(e);
     toast('No se pudo crear invitación');
   }
 }
 
-function buildShareURL(g){ const base=location.origin+location.pathname; return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`; }
+function buildShareURL(g){
+  const base=location.origin+location.pathname;
+  return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`;
+}
+
+/* Generación QR robusta */
 function makeQR(el,text,size=240){
   el.innerHTML='';
-  if(window.QRCode && typeof QRCode.toCanvas==='function'){
-    const c=document.createElement('canvas'); c.width=c.height=size; el.appendChild(c);
-    try{ QRCode.toCanvas(c,String(text),{width:size,errorCorrectionLevel:'M',margin:2}); }catch(e){console.error(e);}
-    return c;
-  } else {
-    try{ new QRCode(el,{text:String(text),width:size,height:size,correctLevel:(window.QRCode?.CorrectLevel?.M||0)}); }catch(e){console.error(e);}
-    return el.querySelector('canvas,img');
+  try{
+    if(window.QRCode?.toCanvas){
+      const c=document.createElement('canvas'); c.width=c.height=size; el.appendChild(c);
+      QRCode.toCanvas(c,String(text),{width:size,errorCorrectionLevel:'M',margin:2});
+      return c;
+    }
+    if(window.QRCode){
+      new QRCode(el,{text:String(text),width:size,height:size,correctLevel:(window.QRCode?.CorrectLevel?.M||0)});
+      return el.querySelector('canvas,img');
+    }
+    throw new Error('QRCode lib no encontrada');
+  }catch(err){
+    console.error('QR Gen error:',err); toast('No se pudo generar el QR');
+    const p=document.createElement('div'); p.className='mini muted'; p.textContent='No se pudo generar el QR';
+    el.appendChild(p);
+    return null;
   }
 }
+
 function mostrarInvitacion(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
-  const wrap=document.getElementById('qrCanvas'); const url=buildShareURL(guest);
+  const wrap=$('qrCanvas'); const url=buildShareURL(guest);
   makeQR(wrap,url,260); wrap.dataset.guestId=guest.id;
-  document.getElementById('qrNombre').textContent=guest.nombre;
-  document.getElementById('qrToken').textContent=guest.token;
-  document.getElementById('qrEvento').textContent=ev?ev.nombre:'—';
-  document.getElementById('qrPreview').classList.remove('hidden');
+  $('qrNombre').textContent=guest.nombre;
+  $('qrToken').textContent=guest.token;
+  $('qrEvento').textContent=ev?ev.nombre:'—';
+  $('qrPreview').classList.remove('hidden');
+  pintarFlyer(guest);
 }
+
+/* ===== Flyer con temas (para enviar al invitado) ===== */
+function pintarFlyer(guest){
+  const ev=state.events.find(e=>e.id===guest.eventId);
+  const theme = state.ui.flyerTheme || 'oro';
+
+  const c=document.createElement('canvas'); c.width=1200; c.height=675; // 16:9 para WhatsApp
+  const ctx=c.getContext('2d');
+
+  // Fondo por tema
+  if(theme==='oro'){
+    const g=ctx.createLinearGradient(0,0,0,c.height);
+    g.addColorStop(0,'#fff7d1'); g.addColorStop(.55,'#f5d777'); g.addColorStop(1,'#d4af37');
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(0,0,0,.08)'; for(let i=0;i<18;i++){ctx.fillRect(70*i,0,1,c.height);}
+    ctx.fillStyle='#2a1f0b';
+  } else if(theme==='plata'){
+    const g=ctx.createLinearGradient(0,0,c.width,0);
+    g.addColorStop(0,'#f5f7fa'); g.addColorStop(1,'#cfd8dc');
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(0,0,0,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);}
+    ctx.fillStyle='#263238';
+  } else { // noche
+    const g=ctx.createLinearGradient(0,0,0,c.height);
+    g.addColorStop(0,'#0b1020'); g.addColorStop(1,'#1f2937');
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(255,255,255,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);}
+    ctx.fillStyle='#f3f4f6';
+  }
+
+  // Título “Estás invitado/a a”
+  ctx.font='800 46px "Poppins",sans-serif';
+  ctx.fillText('ESTÁS INVITADO/A A', 60, 110);
+
+  // Nombre del evento grande
+  ctx.font='900 72px "Poppins",sans-serif';
+  const evName = ev ? ev.nombre : '';
+  ctx.fillText(evName, 60, 190);
+
+  // Nombre del invitado
+  ctx.font='700 40px "Poppins",sans-serif';
+  ctx.fillText(`Invitado/a: ${guest.nombre}`, 60, 260);
+
+  // Token
+  ctx.font='600 34px "Poppins",sans-serif';
+  ctx.fillText(`Token: ${guest.token}`, 60, 310);
+
+  // Pie
+  ctx.font='500 26px "Poppins",sans-serif';
+  ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 370);
+
+  // Adorno suave
+  ctx.globalAlpha = 0.08;
+  ctx.fillRect(60, 420, 1080, 160);
+  ctx.globalAlpha = 1;
+
+  state.flyers.lastDataUrl=c.toDataURL('image/png');
+  $('checkinFlyerImg').src=state.flyers.lastDataUrl;
+}
+
+/* Descargar QR / Imprimir */
 function descargarQR(){
-  const wrap=document.getElementById('qrCanvas'); if(!wrap) return;
+  const wrap=$('qrCanvas'); if(!wrap) return;
   const node=wrap.querySelector('canvas,img'); if(!node) return;
   let url=''; if(node.tagName.toLowerCase()==='canvas'){url=node.toDataURL('image/png');}
   else { const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h; c.getContext('2d').drawImage(node,0,0,w,h); url=c.toDataURL('image/png'); }
@@ -581,41 +689,44 @@ function descargarQR(){
   const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=url; a.click();
 }
 function imprimirQR(){
-  const wrap=document.getElementById('qrCanvas'); if(!wrap) return;
+  const wrap=$('qrCanvas'); if(!wrap) return;
   const node=wrap.querySelector('canvas,img'); if(!node) return;
   const src=node.tagName.toLowerCase()==='canvas'?node.toDataURL('image/png'):(node.src||'');
   const w=window.open('','_blank'); w.document.write(`<img src="${src}" style="width:320px">`); w.document.close(); w.focus(); w.print();
 }
+
+/* NUEVO: descargar flyer generado */
+function descargarFlyer(){
+  const url = state.flyers.lastDataUrl;
+  if(!url){ toast('Primero generá un flyer'); return; }
+  const gid=$('qrCanvas')?.dataset?.guestId;
+  const g=state.guests.find(x=>x.id===gid);
+  const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
+  const a=document.createElement('a'); a.download=`FLYER_${name}.png`; a.href=url; a.click();
+}
+
 function verQR(guestId){ const g=state.guests.find(x=>x.id===guestId); if(!g) return; mostrarInvitacion(g); showTab('invitados'); }
 
-/* === Acciones rápidas por invitado === */
+/* Acciones rápidas por invitado */
 async function copiarLink(guestId){
   const g = state.guests.find(x=>x.id===guestId);
   if(!g){ toast('Invitado no encontrado'); return; }
   const url = buildShareURL({id:g.id, token:g.token, eventId:g.eventId});
-  try{
-    await navigator.clipboard.writeText(url);
-    toast('Enlace copiado al portapapeles');
-  }catch(e){
-    const ta=document.createElement('textarea');
-    ta.value=url; document.body.appendChild(ta); ta.select();
-    try{ document.execCommand('copy'); toast('Enlace copiado'); }
-    catch(_){ toast('No se pudo copiar. Pegá manual: ' + url); }
-    finally{ ta.remove(); }
+  try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
+  catch(e){
+    const ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('Enlace copiado'); }catch(_){ toast('No se pudo copiar. Pegá manual: ' + url); } finally{ ta.remove(); }
   }
 }
-function regenerarQR(guestId){
-  verQR(guestId);
-  toast('QR regenerado');
-}
+function regenerarQR(guestId){ verQR(guestId); toast('QR regenerado'); }
 
 /* ===== Listados ===== */
 function renderInvitadosDeEvento(eventId){
   state.ui.invitadosEventoActual=eventId;
-  const zona=document.getElementById('zonaInvitadosEvento');
+  const zona=$('zonaInvitadosEvento');
   const ev=state.events.find(e=>e.id===eventId);
   if(!ev){ zona.innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>'; return; }
-  const q=(document.getElementById('buscarInvitadosInput').value||'').trim().toLowerCase();
+  const q=($('buscarInvitadosInput').value||'').trim().toLowerCase();
   const invitados=state.guests.filter(g=>g.eventId===eventId && g.nombre.toLowerCase().includes(q));
   zona.innerHTML = `
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -625,12 +736,7 @@ function renderInvitadosDeEvento(eventId){
     <div style="overflow:auto">
       <table class="table">
         <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Token</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
+          <tr><th>Nombre</th><th>Token</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody id="tbodyInvEvt"></tbody>
       </table>
@@ -649,7 +755,7 @@ function renderInvitadosDeEvento(eventId){
       </td>`;
     tbody.appendChild(tr);
   });
-  zona.querySelector('#scanHereBtn').onclick=()=>{document.getElementById('scanEvento').value=ev.id; showTab('escanear'); setTimeout(()=>toggleScanner(),150);};
+  zona.querySelector('#scanHereBtn').onclick=()=>{ $('scanEvento').value=ev.id; showTab('escanear'); setTimeout(()=>toggleScanner(),150); };
   tbody.querySelectorAll('button[data-showqr]').forEach(b=> b.onclick=()=> verQR(b.dataset.showqr));
   tbody.querySelectorAll('button[data-copy]').forEach(b=> b.onclick=()=> copiarLink(b.dataset.copy));
   tbody.querySelectorAll('button[data-regen]').forEach(b=> b.onclick=()=> regenerarQR(b.dataset.regen));
@@ -657,7 +763,7 @@ function renderInvitadosDeEvento(eventId){
 function filtrarInvitadosActual(){ if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); } }
 
 function renderInvitadosRecientes(){
-  const cont=document.getElementById('listaInvitadosRecientes'); if(!cont) return;
+  const cont=$('listaInvitadosRecientes'); if(!cont) return;
   const ult=state.guests.slice(-6).reverse();
   if(ult.length===0){cont.innerHTML='<div class="muted">Todavía no hay invitados.</div>'; return;}
   cont.innerHTML='<div class="list"></div>'; const list=cont.querySelector('.list');
@@ -683,8 +789,8 @@ function renderInvitadosRecientes(){
 }
 
 function renderCaducadas(){
-  const box=document.getElementById('listaCaducadas'); if(!box) return;
-  const term=(document.getElementById('buscarCad').value||'').toLowerCase();
+  const box=$('listaCaducadas'); if(!box) return;
+  const term=($('buscarCad').value||'').toLowerCase();
   const usadas=state.guests.filter(g=>g.used).map(g=>({g,ev:state.events.find(e=>e.id===g.eventId)}))
     .filter(x=>(x.g.nombre+' '+(x.ev?x.ev.nombre:'')).toLowerCase().includes(term)).reverse();
   if(usadas.length===0){ box.innerHTML='<div class="muted">Sin registros aún.</div>'; return; }
@@ -701,69 +807,52 @@ async function reactivarInvitacion(guestId){
   catch(e){ console.error(e); toast('Error al reactivar'); }
 }
 
-/* ===== Escaneo (cámara + fallback + manual) ===== */
+/* ===== Escaneo ===== */
 let stream=null, barcodeReader=null, rafId=null;
 async function toggleScanner(){
-  const btn=document.getElementById('scanBtn');
-  const hint=document.getElementById('cameraHint');
+  const btn=$('scanBtn'); const hint=$('cameraHint');
   if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
-    const video=document.getElementById('video'); video.srcObject=stream; await video.play();
-    document.getElementById('scanResultado').textContent='Cámara lista. Escaneando…';
-    hint.textContent='';
+    const video=$('video'); video.srcObject=stream; await video.play();
+    $('scanResultado').textContent='Cámara lista. Escaneando…'; hint.textContent='';
     if('BarcodeDetector' in window){
       const det = new window.BarcodeDetector({formats:['qr_code']});
-      const loop=async()=>{
-        try{
-          const codes=await det.detect(video);
-          if(codes && codes.length){ await handleScan(codes[0].rawValue); }
-        }catch(_){}
-        rafId=requestAnimationFrame(loop);
-      }; loop();
+      const loop=async()=>{ try{ const codes=await det.detect(video); if(codes && codes.length){ await handleScan(codes[0].rawValue); } }catch(_){}
+        rafId=requestAnimationFrame(loop); }; loop();
     } else {
-      // ZXing fallback
       barcodeReader = new ZXing.BrowserMultiFormatReader();
-      const loop=async()=>{
-        try{
-          const result=await barcodeReader.decodeOnceFromVideoElement(video).catch(()=>null);
-          if(result && result.text){ await handleScan(result.text); }
-        }catch(_){}
-        rafId=requestAnimationFrame(loop);
-      }; loop();
+      const loop=async()=>{ try{ const result=await barcodeReader.decodeOnceFromVideoElement(video).catch(()=>null);
+        if(result && result.text){ await handleScan(result.text); } }catch(_){}
+        rafId=requestAnimationFrame(loop); }; loop();
       hint.textContent='Usando lector alternativo (ZXing).';
     }
     btn.textContent='Detener cámara';
   }catch(err){
     console.error(err);
-    hint.textContent='No se pudo abrir la cámara. Permití el acceso o usa el ingreso manual.';
-    toast('No se pudo abrir la cámara');
+    hint.textContent='No se pudo abrir la cámara. Permití el acceso o usa el ingreso manual.'; toast('No se pudo abrir la cámara');
   }
 }
 async function stopScanner(){
   if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
   if(barcodeReader){ try{ barcodeReader.reset(); }catch{} barcodeReader=null; }
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
-  const video=document.getElementById('video'); try{ video.pause(); }catch{} video.srcObject=null;
-  document.getElementById('scanResultado').textContent='Cámara detenida';
+  const video=$('video'); try{ video.pause(); }catch{} video.srcObject=null;
+  $('scanResultado').textContent='Cámara detenida';
 }
-function setScanMsg(msg){ document.getElementById('scanResultado').textContent=msg; }
-function procesarManual(){
-  const v=(document.getElementById('manualCode').value||'').trim();
-  if(!v) return; handleScan(v);
-}
+function setScanMsg(msg){ $('scanResultado').textContent=msg; }
+function procesarManual(){ const v=($('manualCode').value||'').trim(); if(!v) return; handleScan(v); }
+
 async function handleScan(raw){
-  // ¿URL con ?u=&g=&t= ?
   try{
     const url=new URL(raw);
     const u=url.searchParams.get('u'), g=url.searchParams.get('g'), t=url.searchParams.get('t');
     if(u&&g&&t){ await checkinFromURL(u,g,t); return; }
   }catch(_){}
-  // Token directo (misma cuenta)
   const code=(raw||'').trim();
   const g=state.guests.find(x=>x.token===code);
   if(!g){ setScanMsg('❌ QR/Token no válido'); return; }
-  const filtroEv=document.getElementById('scanEvento').value;
+  const filtroEv=$('scanEvento').value;
   if(filtroEv && g.eventId!==filtroEv){ setScanMsg('⛔ Pertenece a otro evento'); return; }
   if(g.used){ setScanMsg(`⚠️ Ya usado por ${g.nombre}`); return; }
   await marcarUsadoYMostrar(g);
@@ -780,7 +869,7 @@ async function checkinFromURL(u,gid,token){
     const gSnap=await colGuests().doc(gid).get();
     if(!gSnap.exists){ setScanMsg('❌ Invitación no encontrada'); return; }
     const guest={id:gid,...gSnap.data()};
-    const filtroEv=document.getElementById('scanEvento').value;
+    const filtroEv=$('scanEvento').value;
     if(filtroEv && guest.eventId!==filtroEv){ setScanMsg('⛔ Pertenece a otro evento'); return; }
     if(guest.used){ setScanMsg(`⚠️ Ya usado por ${guest.nombre}`); return; }
     await marcarUsadoYMostrar(guest);
@@ -790,29 +879,19 @@ async function marcarUsadoYMostrar(guest){
   const ts=Date.now();
   try{ await colGuests().doc(guest.id).update({used:true,usedAt:ts}); }
   catch(e){ console.error(e); toast('No se pudo marcar el ingreso'); return; }
-  const ev=state.events.find(e=>e.id===guest.eventId);
-  // Flyer simple (texto)
-  const c=document.createElement('canvas'); c.width=1000; c.height=600; const ctx=c.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle='#111827'; ctx.font='900 62px "Poppins",sans-serif'; ctx.fillText('ADMITIDO', 40, 110);
-  ctx.font='700 38px "Poppins",sans-serif'; ctx.fillText(`Invitado: ${guest.nombre}`, 40, 200);
-  ctx.font='600 34px "Poppins",sans-serif'; ctx.fillText(`Evento: ${ev?ev.nombre:''}`, 40, 260);
-  ctx.font='600 30px "Poppins",sans-serif'; ctx.fillText(`Token: ${guest.token}`, 40, 310);
-  ctx.font='500 26px "Poppins",sans-serif'; ctx.fillText('• Acceso registrado. • Para reactivar, usa "Invitaciones caducadas".', 40, 380);
-  const dataUrl=c.toDataURL('image/png');
-  document.getElementById('checkinFlyerImg').src=dataUrl;
+  pintarFlyer(guest);
   showModal();
+  const ev=state.events.find(e=>e.id===guest.eventId);
   setScanMsg(`✅ Bienvenido/a ${guest.nombre} — ${ev?ev.nombre:''}`);
   renderCaducadas(); filtrarInvitadosActual(); renderInvitadosRecientes();
 }
-function showModal(){ document.getElementById('modalCheckin').style.display='flex'; }
-function hideModal(){ document.getElementById('modalCheckin').style.display='none'; }
+function showModal(){ $('modalCheckin').style.display='flex'; }
+function hideModal(){ $('modalCheckin').style.display='none'; }
 
 /* ===== Boot ===== */
 window.addEventListener('load',async()=>{
   await initCloud();
   if(!mustHaveFirebase) return;
-  // si viene con ?u=&g=&t= se podría mostrar landing pública; aquí lo manejamos desde escáner/manual
 });
 </script>
 </body>
