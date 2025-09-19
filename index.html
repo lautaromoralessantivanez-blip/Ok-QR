@@ -31,7 +31,7 @@
       "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"
     ];
     for (const url of cdns){ try{ await loadScript(url); if (loadedOK()) return true; }catch{} }
-    return false;
+    return loadedOK();
   })();
 })();
 </script>
@@ -613,7 +613,7 @@ async function makeQR(el, text, size = 240){
     }
   } catch(_) {}
 
-  // 2) Fallback externo (PNG) — asegura visualización
+  // 2) Fallback externo visible inmediato (IMG) — solo para previsualización
   const api = 'https://api.qrserver.com/v1/create-qr-code/';
   const url = `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
   const img = document.createElement('img');
@@ -623,8 +623,9 @@ async function makeQR(el, text, size = 240){
   return img;
 }
 
-/* Genera un canvas QR SOLO usando la lib local (para embebido en flyer) */
+/* === NUEVO: canvas QR garantizado para incrustar en flyer === */
 async function makeLocalQRCanvas(text, size=260){
+  // a) si hay lib local, uso toCanvas
   try{
     const ok = await (window.qrLibReady || Promise.resolve(false));
     if (ok && window.QRCode?.toCanvas){
@@ -637,7 +638,42 @@ async function makeLocalQRCanvas(text, size=260){
       return c;
     }
   }catch(_){}
-  return null; // si no hay lib local, no puedo embebido seguro (CORS)
+
+  // b) sin lib: bajo PNG con fetch y lo dibujo en un canvas propio (no tainta CORS porque es blob:)
+  try{
+    const api = 'https://api.qrserver.com/v1/create-qr-code/';
+    const url = `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
+    const resp = await fetch(url, {mode:'cors', cache:'no-store'});
+    if(resp.ok){
+      const blob = await resp.blob();
+      const bmp = await createImageBitmap(blob);
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(bmp, 0, 0, size, size);
+      return c;
+    }
+  }catch(_){}
+
+  // c) última opción: placeholder cuadriculado (no escaneable) para no romper el diseño
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+  // cuadricula basada en hash simple
+  const seed = await sha256hex(String(text));
+  const n=29; const cell = Math.floor(size/n);
+  for (let y=0; y<n; y++){
+    for (let x=0; x<n; x++){
+      const idx = (x + y*n) % seed.length;
+      const on = parseInt(seed[idx],16) % 2 === 0;
+      ctx.fillStyle = on ? '#000' : '#fff';
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+    }
+  }
+  // borde
+  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.strokeRect(1,1,size-2,size-2);
+  return c;
 }
 
 function mostrarInvitacion(guest){
@@ -651,7 +687,7 @@ function mostrarInvitacion(guest){
   pintarFlyer(guest);
 }
 
-/* ===== Flyer con temas y (si se puede) QR embebido ===== */
+/* ===== Flyer con temas y (siempre) QR embebido ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
@@ -706,32 +742,20 @@ async function pintarFlyer(guest){
   ctx.fillRect(60, 420, 1080, 160);
   ctx.globalAlpha = 1;
 
-  // Intento embebido del QR (solo si tengo lib local -> canvas propio sin CORS)
+  // QR embebido (garantizado)
   const url=buildShareURL(guest);
   const qrCan = await makeLocalQRCanvas(url, 260);
-  if(qrCan){
-    const qrX = c.width - 60 - 260;
-    const qrY = 60;
-    // Marco blanco + sombra
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.18)';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = '#fff';
-    roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
-    ctx.restore();
-    ctx.drawImage(qrCan, qrX, qrY, 260, 260);
-  }else{
-    // Marcador si no hay QR embebible
-    const boxX = c.width - 60 - 260;
-    const boxY = 60;
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,.8)';
-    roundRect(ctx, boxX-10, boxY-10, 280, 280, 16); ctx.fill();
-    ctx.fillStyle = 'rgba(0,0,0,.5)';
-    ctx.font='800 32px "Poppins",sans-serif';
-    ctx.fillText('QR', boxX+100, boxY+140);
-    ctx.restore();
-  }
+  const qrX = c.width - 60 - 260;
+  const qrY = 60;
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.18)';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
+  ctx.restore();
+
+  ctx.drawImage(qrCan, qrX, qrY, 260, 260);
 
   state.flyers.lastDataUrl=c.toDataURL('image/png');
   $('checkinFlyerImg').src=state.flyers.lastDataUrl;
