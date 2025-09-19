@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#d4af37">
+<title>Fiestas QR — Cloud</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Great+Vibes&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<!-- Generar QR -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<!-- Leer QR (fallback ZXing) -->
+<script src="https://unpkg.com/@zxing/library@0.20.0"></script>
+
+<style>
+:root{--bg:#F5F4F0;--panel:#FAF9F6;--card:#FFFFFF;--text:#1f2937;--muted:#6B7280;--gold:#d4af37;--ok:#22c55e;--danger:#ef4444;--radius:16px;--shadow:0 8px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.05);--border:1px solid rgba(0,0,0,.08)}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,var(--panel),var(--bg));color:var(--text);font-family:"Poppins",system-ui,Segoe UI,Roboto,sans-serif}
+img{max-width:100%;display:block}
+.container{max-width:1120px;margin:0 auto;padding:16px}
+@media(min-width:860px){.container{padding:24px}}
+header{position:sticky;top:0;background:rgba(250,249,246,.85);backdrop-filter:blur(8px);border-bottom:var(--border);z-index:20}
+header .container{display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px;font-weight:900}
+.brand .mark{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--gold),#b18a1a);box-shadow:0 0 0 3px rgba(212,175,55,.25)}
+@media(min-width:860px){.brand .mark{width:36px;height:36px}}
+.btn{appearance:none;border:none;border-radius:12px;padding:12px 14px;font-weight:800;cursor:pointer;background:#f1f5f9;color:#111827;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);width:100%;letter-spacing:.2px;transition:transform .06s ease,box-shadow .12s ease,background .12s ease;-webkit-tap-highlight-color:transparent}
+.btn:focus{outline:2px solid rgba(212,175,55,.45);outline-offset:2px}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn.gold{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;box-shadow:0 4px 12px rgba(212,175,55,.25)}
+.btn.ghost{background:#fff;border:1px solid rgba(0,0,0,.08)}
+.btn.ok{background:linear-gradient(180deg,rgba(34,197,94,.2),rgba(34,197,94,.35));border:1px solid rgba(34,197,94,.45);color:#064e3b}
+.grid{display:grid;gap:16px}
+.card{background:var(--card);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:var(--border)}
+.card .card-c{padding:14px 16px}
+@media(min-width:860px){.card .card-h{padding:16px 18px}.card .card-c{padding:16px 18px}}
+.field{display:grid;gap:6px;min-width:0}
+label{font-size:.9rem;color:var(--muted)}
+input,select{background:#fff;border:1px solid rgba(0,0,0,.12);color:#1f2937;border-radius:12px;padding:12px;width:100%}
+input::placeholder{color:#9aa3af}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.hidden{display:none !important}
+.muted{color:var(--muted)} .mini{font-size:.9rem}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{padding:10px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.12);cursor:pointer;font-weight:700;background:#fff}
+.tab.active{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;border-color:#d4af37}
+.pill{padding:6px 10px;border-radius:999px;font-size:.8rem;border:1px solid rgba(0,0,0,.12);background:#fff}
+.pill.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
+.list{display:grid;gap:12px}
+.event-card{display:grid;gap:12px;padding:16px;border-radius:16px;border:var(--border);background:#fff}
+table{border-collapse:collapse;width:100%;min-width:620px}
+th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left}
+thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
+.qr-box{display:grid;place-items:center;padding:12px;border-radius:16px;background:#fafafa;border:1px dashed rgba(212,175,55,.5)}
+.video{width:100%;max-height:360px;border-radius:16px;border:1px solid rgba(0,0,0,.12);background:#000}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:200}
+.modal-body{background:#fff;border:var(--border);border-radius:18px;box-shadow:var(--shadow);padding:12px;max-width:780px;width:100%}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:var(--border)}
+.help{font-size:.85rem;color:#6b7280}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.1);background:#fff;font-size:.75rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#111827;color:#f9fafb;border:1px solid rgba(0,0,0,.2);padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);z-index:100}
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="brand"><div class="mark"></div><span>Fiestas<span style="color:var(--gold)">QR</span></span></div>
+    <div class="row" id="userBar" style="align-items:center">
+      <span id="userEmail" class="mini"></span>
+      <button class="btn ghost" id="logoutBtn" title="Cerrar sesión">Salir</button>
+    </div>
+  </div>
+</header>
+
+<section id="needFirebase" class="container hidden" aria-live="polite">
+  <div class="card">
+    <div class="card-h"><strong>Configuración requerida</strong></div>
+    <div class="card-c">
+      <p>Completá <code>firebaseConfig</code> con tu proyecto y activá Auth (Email/Password). Agregá el dominio en <em>Authorized domains</em>.</p>
+    </div>
+  </div>
+</section>
+
+<main class="container">
+  <!-- AUTENTICACIÓN -->
+  <section id="auth" class="hidden">
+    <div class="grid two">
+      <!-- LOGIN -->
+      <div class="card">
+        <div class="card-h"><strong>Iniciar sesión</strong></div>
+        <div class="card-c">
+          <form id="loginForm" class="grid" novalidate>
+            <div class="field"><label for="loginEmail">Correo</label><input id="loginEmail" type="email" placeholder="empresa@ejemplo.com" autocomplete="username email" inputmode="email" required /></div>
+            <div class="field"><label for="loginPass">Contraseña</label><input id="loginPass" type="password" placeholder="********" autocomplete="current-password" required minlength="6" /></div>
+            <div class="row">
+              <button class="btn gold" id="loginBtn" type="submit">Entrar</button>
+              <span class="help">En móvil: tocá el botón o Enter.</span>
+            </div>
+            <div class="mini muted" id="authHintLogin"></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- REGISTRO -->
+      <div class="card">
+        <div class="card-h"><strong>Registración</strong></div>
+        <div class="card-c">
+          <form id="regForm" class="grid" novalidate>
+            <div class="field"><label for="regEmail">Correo</label><input id="regEmail" type="email" placeholder="empresa@ejemplo.com" autocomplete="email" inputmode="email" required /></div>
+            <div class="field"><label for="regPass">Contraseña</label><input id="regPass" type="password" placeholder="Crea una contraseña (6+)" autocomplete="new-password" required minlength="6" /></div>
+            <div class="row">
+              <button class="btn ok" id="registerBtn" type="submit">Crear cuenta</button>
+              <span class="help">Se guarda en Firebase (usable en cualquier equipo).</span>
+            </div>
+            <div class="mini muted" id="authHintReg"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <section id="app" class="hidden">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="tabs" role="tablist">
+        <div class="tab active" data-tab="eventos">Eventos</div>
+        <div class="tab" data-tab="invitados">Invitados</div>
+        <div class="tab" data-tab="caducadas">Invitaciones caducadas</div>
+        <div class="tab" data-tab="escanear">Escanear QR</div>
+      </div>
+      <span class="badge" id="modeBadge">cloud</span>
+    </div>
+
+    <!-- EVENTOS -->
+    <div id="vista-eventos">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-h"><strong>Nuevo evento</strong></div>
+          <div class="card-c">
+            <div class="row">
+              <div class="field" style="flex:1 1 240px"><label for="evNombre">Nombre del evento</label><input id="evNombre" placeholder="Ej: Fiesta Primavera" /></div>
+              <div class="field" style="width:210px"><label for="evFecha">Fecha</label><input id="evFecha" type="date" /></div>
+              <div class="field" style="width:210px"><label>&nbsp;</label><button class="btn gold" id="crearEventoBtn" type="button">Crear evento</button></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><strong>Buscar invitados por evento</strong></div>
+          <div class="card-c">
+            <div class="field"><label for="buscarEventoSel">Elegí un evento</label><select id="buscarEventoSel"></select></div>
+            <div class="row" style="margin-top:10px;align-items:center">
+              <input id="buscarInvitadosInput" placeholder="Buscar por nombre..." />
+              <button class="btn ghost" id="buscarInvitadosBtn" type="button">Buscar</button>
+            </div>
+            <div id="zonaInvitadosEvento" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-h"><strong>Lista de eventos</strong></div>
+        <div class="card-c"><div id="listaEventos" class="list"></div></div>
+      </div>
+    </div>
+
+    <!-- INVITADOS -->
+    <div id="vista-invitados" class="hidden">
+      <div class="grid two">
+        <div class="card">
+          <div class="card-h"><strong>Registrar nuevo invitado</strong></div>
+          <div class="card-c">
+            <div class="row">
+              <div class="field" style="flex:1 1 250px"><label for="invNombre">Nombre y apellido</label><input id="invNombre" placeholder="Ej: Ana Pérez" /></div>
+              <div class="field" style="width:260px"><label for="invEvento">Evento</label><select id="invEvento"></select></div>
+              <div class="field" style="width:220px"><label>&nbsp;</label><button class="btn gold" id="registrarInvitadoBtn" type="button">Crear invitación + QR</button></div>
+            </div>
+
+            <div id="qrPreview" class="hidden" style="margin-top:12px">
+              <div class="grid two">
+                <div class="qr-box"><div id="qrCanvas" data-guest-id=""></div></div>
+                <div class="grid">
+                  <div>
+                    <strong id="qrNombre"></strong>
+                    <div class="mini">Evento: <span id="qrEvento"></span></div>
+                    <div class="mini">Token: <span id="qrToken"></span></div>
+                    <div class="mini">Uso único. Mostrar al recepcionista.</div>
+                  </div>
+                  <div class="row">
+                    <button class="btn ok" id="descargarQRBtn" type="button">Descargar PNG (QR)</button>
+                    <button class="btn ghost" id="imprimirQRBtn" type="button">Imprimir QR</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><strong>Invitados recientes</strong></div>
+          <div class="card-c"><div id="listaInvitadosRecientes"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CADUCADAS -->
+    <div id="vista-caducadas" class="hidden">
+      <div class="card">
+        <div class="card-h"><strong>Invitaciones caducadas (ya utilizadas)</strong></div>
+        <div class="card-c">
+          <div class="field"><label for="buscarCad">Buscar</label><input id="buscarCad" placeholder="Nombre o evento..." /></div>
+          <div id="listaCaducadas" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ESCANEAR -->
+    <div id="vista-escanear" class="hidden">
+      <div class="card">
+        <div class="card-h"><strong>Escanear QR</strong></div>
+        <div class="card-c">
+          <div class="row" style="align-items:center">
+            <div class="field" style="flex:1 1 260px"><label for="scanEvento">Limitar al evento (opcional)</label><select id="scanEvento"></select></div>
+            <div class="field" style="width:210px"><label>&nbsp;</label><button class="btn gold" id="scanBtn" type="button">Iniciar cámara</button></div>
+          </div>
+
+          <div style="position:relative;margin-top:8px">
+            <video id="video" class="video" playsinline autoplay muted></video>
+          </div>
+          <div class="help" id="cameraHint" style="margin-top:6px"></div>
+
+          <div class="row" style="margin-top:12px;align-items:center">
+            <div class="field" style="flex:1 1 260px">
+              <label>Ingreso manual (token o URL del QR)</label>
+              <input id="manualCode" placeholder='Pegá el TOKEN (ABCD-1F2G) o el enlace con ?u=&g=&t=' />
+            </div>
+            <div class="field" style="width:200px"><label>&nbsp;</label><button class="btn ok" id="validarManualBtn" type="button">Validar</button></div>
+          </div>
+          <div class="help">Tip: la cámara requiere HTTPS o localhost.</div>
+
+          <div id="scanResultado" style="margin-top:12px" class="mini muted">Estado: esperando…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">Hecho con <span style="color:var(--gold)">★</span> — Cloud only.</div>
+  </section>
+</main>
+
+<div class="fab" id="fabScan">📷 Escanear</div>
+
+<!-- Modal confirmación -->
+<div id="modalCheckin" class="modal" role="dialog" aria-modal="true" aria-label="Ingreso confirmado">
+  <div class="modal-body">
+    <div class="modal-head">
+      <strong>Ingreso confirmado</strong>
+      <button class="btn ghost" id="modalCloseBtn" type="button">Cerrar</button>
+    </div>
+    <div style="padding:12px">
+      <img id="checkinFlyerImg" style="width:100%;max-width:720px;border-radius:16px;border:1px solid rgba(0,0,0,.12)" alt="Check-in Flyer">
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================== CONFIG FIREBASE (OBLIGATORIO) =================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBoQwu1L04BRGVFgUlbebSEjwMFL87lSQE",
+  authDomain: "ok-invitaciones.firebaseapp.com",
+  projectId: "ok-invitaciones",
+  storageBucket: "ok-invitaciones.appspot.com",
+  messagingSenderId: "552768626682",
+  appId: "1:552768626682:web:6b0b9b275e746f8fb00e43",
+  measurementId: "G-Q2DT9HK5PN"
+};
+/* ===================================================================== */
+
+/* ===== Estado global ===== */
+const state={user:null,uid:null,events:[],guests:[],ui:{currentTab:'eventos',invitadosEventoActual:null,flyerTheme:'oro',lastGuestId:null},flyers:{lastDataUrl:null}};
+let db=null,auth=null;
+const mustHaveFirebase = !!(firebaseConfig && firebaseConfig.apiKey);
+
+/* ===== Utils ===== */
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2400);}
+function escapeHtml(s){return (s||'').replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function uid(){return crypto.randomUUID?crypto.randomUUID():'id-'+Math.random().toString(36).slice(2);}
+function newToken(){return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();}
+async function sha256hex(str){const enc=new TextEncoder();const buf=await crypto.subtle.digest('SHA-256', enc.encode(str));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+function emailValido(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||'').trim());}
+
+/* ===== Firestore refs ===== */
+const colEvents=()=>db.collection('users').doc(state.uid).collection('events');
+const colGuests=()=>db.collection('users').doc(state.uid).collection('guests');
+const colPublic=()=>db.collection('public_guests');
+
+/* ===== Init Cloud ===== */
+async function initCloud(){
+  if(!mustHaveFirebase){
+    document.getElementById('needFirebase').classList.remove('hidden');
+    document.getElementById('auth').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+    return;
+  }
+  if(!firebase?.apps?.length) firebase.initializeApp(firebaseConfig);
+  auth=firebase.auth(); db=firebase.firestore();
+  try{ await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);}catch{}
+  auth.onAuthStateChanged(async(user)=>{
+    state.user=user||null; state.uid=user?user.uid:null; syncUIAuth(); if(user){await cloudSubscribe();}
+  });
+  document.getElementById('auth').classList.remove('hidden');
+
+  // Bind forms PC/Móvil
+  document.getElementById('loginForm').addEventListener('submit',onLoginSubmit);
+  document.getElementById('regForm').addEventListener('submit',onRegisterSubmit);
+}
+
+/* ====== Auth helpers ====== */
+function setBusy(btn,isBusy,labelBusy,orig){btn.disabled=!!isBusy; btn.textContent=isBusy?labelBusy:orig;}
+function presentAuthError(where, err){
+  console.error(err);
+  const map={
+    'auth/email-already-in-use':'Ese correo ya está registrado.',
+    'auth/invalid-email':'Correo inválido.',
+    'auth/weak-password':'La contraseña debe tener 6+ caracteres.',
+    'auth/user-not-found':'No existe una cuenta con ese correo.',
+    'auth/wrong-password':'Contraseña incorrecta.',
+    'auth/network-request-failed':'Sin conexión o bloqueado por red.',
+    'auth/operation-not-allowed':'Habilitá "Email/Password" en Firebase Authentication.',
+    'auth/domain-not-allowed':'Agregá este dominio en Authentication → Settings → Authorized domains.',
+    'auth/too-many-requests':'Demasiados intentos. Probá más tarde.',
+    'auth/app-not-authorized':'Dominio no autorizado para esta app.',
+    'auth/invalid-api-key':'apiKey inválida en firebaseConfig.'
+  };
+  const msg = map[err?.code] || 'No se pudo completar la operación.';
+  const extra = err?.code ? ` [${err.code}]` : '';
+  const el=document.getElementById(where);
+  if(el){el.textContent = msg + extra; el.style.color='#b91c1c';}
+  toast(msg);
+}
+
+/* ====== Registro / Login ====== */
+async function onRegisterSubmit(e){
+  e.preventDefault();
+  const email=(document.getElementById('regEmail').value||'').trim().toLowerCase();
+  const pass =document.getElementById('regPass').value||'';
+  const btn=document.getElementById('registerBtn');
+  const hint=document.getElementById('authHintReg'); hint.textContent='';
+  if(!emailValido(email)) return presentAuthError('authHintReg',{code:'auth/invalid-email'});
+  if(pass.length<6) return presentAuthError('authHintReg',{code:'auth/weak-password'});
+  const orig=btn.textContent; setBusy(btn,true,'Creando…',orig);
+  try{ await auth.createUserWithEmailAndPassword(email, pass); hint.style.color='#065f46'; hint.textContent='Cuenta creada ✔️'; toast('Cuenta creada ✔️'); }
+  catch(err){ presentAuthError('authHintReg',err); }
+  finally{ setBusy(btn,false,'',orig); }
+}
+async function onLoginSubmit(e){
+  e.preventDefault();
+  const email=(document.getElementById('loginEmail').value||'').trim().toLowerCase();
+  const pass =document.getElementById('loginPass').value||'';
+  const btn=document.getElementById('loginBtn');
+  const hint=document.getElementById('authHintLogin'); hint.textContent='';
+  if(!emailValido(email)) return presentAuthError('authHintLogin',{code:'auth/invalid-email'});
+  const orig=btn.textContent; setBusy(btn,true,'Ingresando…',orig);
+  try{ await auth.signInWithEmailAndPassword(email, pass); hint.style.color='#065f46'; hint.textContent='Bienvenido 👋'; toast('Bienvenido 👋'); }
+  catch(err){ presentAuthError('authHintLogin',err); }
+  finally{ setBusy(btn,false,'',orig); }
+}
+function logout(){ try{auth.signOut();}catch{} }
+
+/* ====== UI ====== */
+document.addEventListener('click',(e)=>{
+  const t=e.target;
+  if(t.closest('.tab')) showTab(t.closest('.tab').dataset.tab);
+  if(t.id==='logoutBtn') logout();
+  if(t.id==='crearEventoBtn') crearEvento();
+  if(t.id==='registrarInvitadoBtn') registrarInvitado();
+  if(t.id==='descargarQRBtn') descargarQR();
+  if(t.id==='imprimirQRBtn') imprimirQR();
+  if(t.id==='buscarInvitadosBtn') filtrarInvitadosActual();
+  if(t.id==='scanBtn') toggleScanner();
+  if(t.id==='validarManualBtn') procesarManual();
+  if(t.id==='fabScan'){showTab('escanear'); setTimeout(()=>toggleScanner(),200);}
+  if(t.id==='modalCloseBtn'||t.id==='modalCheckin') hideModal();
+});
+document.addEventListener('input',(e)=>{
+  if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
+  if(e.target.id==='buscarCad') renderCaducadas();
+  if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
+});
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
+
+function syncUIAuth(){
+  const logged=!!state.user;
+  document.getElementById('auth').classList.toggle('hidden',logged?true:false && !mustHaveFirebase);
+  document.getElementById('app').classList.toggle('hidden',!logged);
+  document.getElementById('userBar').classList.toggle('hidden',!logged);
+  document.getElementById('userEmail').textContent=logged?(state.user.email||''):'';
+  if(logged){showTab(state.ui.currentTab||'eventos');refrescarCombos();renderEventos();renderInvitadosRecientes();renderCaducadas();}
+  document.getElementById('modeBadge').textContent='cloud';
+}
+
+/* ===== Subscripción tiempo real ===== */
+let unsubEvents=null,unsubGuests=null;
+async function cloudSubscribe(){
+  if(unsubEvents)unsubEvents(); if(unsubGuests)unsubGuests();
+  unsubEvents=colEvents().onSnapshot(snap=>{
+    state.events=snap.docs.map(d=>({id:d.id,...d.data()}));
+    refrescarCombos();renderEventos();renderInvitadosRecientes();
+    if(state.ui.invitadosEventoActual){renderInvitadosDeEvento(state.ui.invitadosEventoActual);}
+  },console.error);
+  unsubGuests=colGuests().onSnapshot(snap=>{
+    state.guests=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderInvitadosRecientes();renderCaducadas();
+    if(state.ui.invitadosEventoActual){renderInvitadosDeEvento(state.ui.invitadosEventoActual);}
+  },console.error);
+}
+
+/* ===== Tabs ===== */
+function showTab(tab){
+  state.ui.currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+  document.getElementById('vista-eventos').classList.toggle('hidden',tab!=='eventos');
+  document.getElementById('vista-invitados').classList.toggle('hidden',tab!=='invitados');
+  document.getElementById('vista-caducadas').classList.toggle('hidden',tab!=='caducadas');
+  document.getElementById('vista-escanear').classList.toggle('hidden',tab!=='escanear');
+}
+
+/* ===== Eventos ===== */
+async function crearEvento(){
+  const nombre=(document.getElementById('evNombre').value||'').trim();
+  const fecha=(document.getElementById('evFecha').value||'');
+  if(!nombre) return toast('Poné un nombre para el evento');
+  const ev={nombre,fecha,finalizado:false};
+  try{ await colEvents().add(ev); toast('Evento creado'); }
+  catch(e){ console.error(e); toast('No se pudo crear'); }
+  document.getElementById('evNombre').value=''; document.getElementById('evFecha').value='';
+}
+function renderEventos(){
+  const cont=document.getElementById('listaEventos'); cont.innerHTML='';
+  if(state.events.length===0){cont.innerHTML='<div class="muted">No hay eventos todavía.</div>'; return;}
+  state.events.slice().reverse().forEach(ev=>{
+    const total=state.guests.filter(g=>g.eventId===ev.id).length;
+    const card=document.createElement('div');
+    card.className='event-card '+(ev.finalizado?'finalizado':'');
+    card.innerHTML = `
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800;font-size:1.1rem">${escapeHtml(ev.nombre)}</div>
+          <div class="row" style="gap:8px;align-items:center;margin-top:4px">
+            <span class="pill ${ev.finalizado?'':'ok'}">${ev.finalizado?'Finalizado':'Abierto'}</span>
+            ${ev.fecha?`<span class="pill">📅 ${ev.fecha}</span>`:''}
+            <span class="pill">👥 ${total} invitados</span>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" data-id="${ev.id}" data-act="ver">Ver invitados</button>
+          <button class="btn ${ev.finalizado?'ok':'gold'}" data-id="${ev.id}" data-act="toggle">${ev.finalizado?'Reabrir':'Finalizar'}</button>
+        </div>
+      </div>`;
+    cont.appendChild(card);
+  });
+  cont.querySelectorAll('button[data-act="ver"]').forEach(b=> b.onclick=()=>{abrirBuscadorEvento(b.dataset.id);});
+  cont.querySelectorAll('button[data-act="toggle"]').forEach(b=> b.onclick=()=> toggleFinalizado(b.dataset.id));
+}
+async function toggleFinalizado(id){
+  const ev=state.events.find(e=>e.id===id); if(!ev) return;
+  try{ await colEvents().doc(id).update({finalizado:!ev.finalizado}); toast(!ev.finalizado?'Evento finalizado':'Evento reabierto'); }
+  catch(e){ console.error(e); toast('Error al actualizar'); }
+}
+function abrirBuscadorEvento(eventId){ const sel=document.getElementById('buscarEventoSel'); sel.value=eventId; renderInvitadosDeEvento(eventId); showTab('eventos'); }
+function refrescarCombos(){
+  const opts=state.events.map(e=>`<option value="${e.id}">${escapeHtml(e.nombre)}</option>`).join('');
+  const invEvento=document.getElementById('invEvento');
+  const buscarEventoSel=document.getElementById('buscarEventoSel');
+  const scanEvento=document.getElementById('scanEvento');
+  if(invEvento) invEvento.innerHTML = `<option value="">Elegí un evento…</option>${opts}`;
+  if(buscarEventoSel) buscarEventoSel.innerHTML = `<option value="">Seleccioná…</option>${opts}`;
+  if(scanEvento) scanEvento.innerHTML = `<option value="">(Cualquiera)</option>${opts}`;
+}
+
+/* ===== Invitados + QR ===== */
+async function registrarInvitado(){
+  const nombre=(document.getElementById('invNombre').value||'').trim();
+  const eventId=document.getElementById('invEvento').value;
+  if(!nombre) return toast('Escribí el nombre del invitado');
+  if(!eventId) return toast('Elegí el evento');
+  let token; do{ token=newToken(); } while(state.guests.some(g=>g.token===token));
+  const guest={nombre,eventId,token,used:false,usedAt:null};
+  try{
+    const doc=await colGuests().add(guest);
+    const gid=doc.id;
+    // Para validación por URL:
+    const ev=state.events.find(e=>e.id===eventId);
+    const tokenHash=await sha256hex(token);
+    await colPublic().doc(`${state.uid}_${gid}`).set({uid:state.uid,guestId:gid,nombre,eventName:ev?ev.nombre:'',tokenHash});
+    state.ui.lastGuestId=gid;
+    document.getElementById('invNombre').value='';
+    mostrarInvitacion({id:gid,...guest});
+    toast('Invitación creada');
+  }catch(e){ console.error(e); toast('No se pudo crear invitación'); }
+}
+function buildShareURL(g){ const base=location.origin+location.pathname; return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`; }
+function makeQR(el,text,size=240){
+  el.innerHTML='';
+  if(window.QRCode && typeof QRCode.toCanvas==='function'){
+    const c=document.createElement('canvas'); c.width=c.height=size; el.appendChild(c);
+    try{ QRCode.toCanvas(c,String(text),{width:size,errorCorrectionLevel:'M',margin:2}); }catch(e){console.error(e);}
+    return c;
+  } else {
+    // fallback a QRCode clásico
+    try{ new QRCode(el,{text:String(text),width:size,height:size,correctLevel:(window.QRCode?.CorrectLevel?.M||0)}); }catch(e){console.error(e);}
+    return el.querySelector('canvas,img');
+  }
+}
+function mostrarInvitacion(guest){
+  const ev=state.events.find(e=>e.id===guest.eventId);
+  const wrap=document.getElementById('qrCanvas'); const url=buildShareURL(guest);
+  const node=makeQR(wrap,url,260); wrap.dataset.guestId=guest.id;
+  document.getElementById('qrNombre').textContent=guest.nombre;
+  document.getElementById('qrToken').textContent=guest.token;
+  document.getElementById('qrEvento').textContent=ev?ev.nombre:'—';
+  document.getElementById('qrPreview').classList.remove('hidden');
+}
+function descargarQR(){
+  const wrap=document.getElementById('qrCanvas'); if(!wrap) return;
+  const node=wrap.querySelector('canvas,img'); if(!node) return;
+  let url=''; if(node.tagName.toLowerCase()==='canvas'){url=node.toDataURL('image/png');}
+  else { const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h; c.getContext('2d').drawImage(node,0,0,w,h); url=c.toDataURL('image/png'); }
+  const g=state.guests.find(x=>x.id===wrap.dataset.guestId); const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
+  const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=url; a.click();
+}
+function imprimirQR(){
+  const wrap=document.getElementById('qrCanvas'); if(!wrap) return;
+  const node=wrap.querySelector('canvas,img'); if(!node) return;
+  const src=node.tagName.toLowerCase()==='canvas'?node.toDataURL('image/png'):(node.src||'');
+  const w=window.open('','_blank'); w.document.write(`<img src="${src}" style="width:320px">`); w.document.close(); w.focus(); w.print();
+}
+function verQR(guestId){ const g=state.guests.find(x=>x.id===guestId); if(!g) return; mostrarInvitacion(g); showTab('invitados'); }
+
+/* ===== Listados ===== */
+function renderInvitadosDeEvento(eventId){
+  state.ui.invitadosEventoActual=eventId;
+  const zona=document.getElementById('zonaInvitadosEvento');
+  const ev=state.events.find(e=>e.id===eventId);
+  if(!ev){ zona.innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>'; return; }
+  const q=(document.getElementById('buscarInvitadosInput').value||'').trim().toLowerCase();
+  const invitados=state.guests.filter(g=>g.eventId===eventId && g.nombre.toLowerCase().includes(q));
+  zona.innerHTML = `
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="muted">${invitados.length} invitado(s) de "${escapeHtml(ev.nombre)}"</div>
+      <div class="row"><button class="btn ghost" id="scanHereBtn">Escanear aquí</button></div>
+    </div>
+    <div style="overflow:auto">
+      <table class="table">
+        <thead><tr><th>Nombre</th><th>Token</th><th>Estado</th><th>QR</th></tr></thead>
+        <tbody id="tbodyInvEvt"></tbody>
+      </table>
+    </div>`;
+  const tbody=zona.querySelector('#tbodyInvEvt');
+  invitados.forEach(g=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${escapeHtml(g.nombre)}</td>
+      <td class="muted">${g.token}</td>
+      <td>${g.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}</td>
+      <td><button class="btn ghost" data-showqr="${g.id}">Ver QR</button></td>`;
+    tbody.appendChild(tr);
+  });
+  zona.querySelector('#scanHereBtn').onclick=()=>{document.getElementById('scanEvento').value=ev.id; showTab('escanear'); setTimeout(()=>toggleScanner(),150);};
+  tbody.querySelectorAll('button[data-showqr]').forEach(b=> b.onclick=()=> verQR(b.dataset.showqr));
+}
+function filtrarInvitadosActual(){ if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); } }
+function renderInvitadosRecientes(){
+  const cont=document.getElementById('listaInvitadosRecientes'); if(!cont) return;
+  const ult=state.guests.slice(-6).reverse();
+  if(ult.length===0){cont.innerHTML='<div class="muted">Todavía no hay invitados.</div>'; return;}
+  cont.innerHTML='<div class="list"></div>'; const list=cont.querySelector('.list');
+  ult.forEach(g=>{
+    const ev=state.events.find(e=>e.id===g.eventId);
+    const div=document.createElement('div'); div.className='row'; div.style.justifyContent='space-between';
+    div.innerHTML = `
+      <div><div style="font-weight:700">${escapeHtml(g.nombre)}</div>
+      <div class="muted">Evento: ${ev?escapeHtml(ev.nombre):'—'} · Token: ${g.token}</div></div>
+      <div class="row"><button class="btn ghost" data-verqr="${g.id}">Ver QR</button>${g.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}</div>`;
+    list.appendChild(div);
+  });
+  list.querySelectorAll('button[data-verqr]').forEach(b=> b.onclick=()=> verQR(b.dataset.verqr));
+}
+function renderCaducadas(){
+  const box=document.getElementById('listaCaducadas'); if(!box) return;
+  const term=(document.getElementById('buscarCad').value||'').toLowerCase();
+  const usadas=state.guests.filter(g=>g.used).map(g=>({g,ev:state.events.find(e=>e.id===g.eventId)}))
+    .filter(x=>(x.g.nombre+' '+(x.ev?x.ev.nombre:'')).toLowerCase().includes(term)).reverse();
+  if(usadas.length===0){ box.innerHTML='<div class="muted">Sin registros aún.</div>'; return; }
+  let html='<div style="overflow:auto"><table class="table"><thead><tr><th>Nombre</th><th>Evento</th><th>Fecha de uso</th><th>Token</th><th></th></tr></thead><tbody>';
+  usadas.forEach(({g,ev})=>{
+    const usado=g.usedAt?new Date(g.usedAt).toLocaleString():'—';
+    html+=`<tr><td>${escapeHtml(g.nombre)}</td><td>${ev?escapeHtml(ev.nombre):'—'}</td><td>${usado}</td><td class="muted">${g.token}</td><td><button class="btn ok" data-reactivar="${g.id}">Reactivar</button></td></tr>`;
+  });
+  html+='</tbody></table></div>'; box.innerHTML=html;
+  box.querySelectorAll('button[data-reactivar]').forEach(b=> b.onclick=()=> reactivarInvitacion(b.dataset.reactivar));
+}
+async function reactivarInvitacion(guestId){
+  try{ await colGuests().doc(guestId).update({used:false,usedAt:null}); toast('Invitación reactivada'); }
+  catch(e){ console.error(e); toast('Error al reactivar'); }
+}
+
+/* ===== Escaneo (cámara + fallback + manual) ===== */
+let stream=null, barcodeReader=null, rafId=null;
+async function toggleScanner(){
+  const btn=document.getElementById('scanBtn');
+  const hint=document.getElementById('cameraHint');
+  if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+    const video=document.getElementById('video'); video.srcObject=stream; await video.play();
+    document.getElementById('scanResultado').textContent='Cámara lista. Escaneando…';
+    hint.textContent='';
+    if('BarcodeDetector' in window){
+      const det = new window.BarcodeDetector({formats:['qr_code']});
+      const loop=async()=>{
+        try{
+          const codes=await det.detect(video);
+          if(codes && codes.length){ await handleScan(codes[0].rawValue); }
+        }catch(_){}
+        rafId=requestAnimationFrame(loop);
+      }; loop();
+    } else {
+      // ZXing fallback
+      barcodeReader = new ZXing.BrowserMultiFormatReader();
+      const loop=async()=>{
+        try{
+          const result=await barcodeReader.decodeOnceFromVideoElement(video).catch(()=>null);
+          if(result && result.text){ await handleScan(result.text); }
+        }catch(_){}
+        rafId=requestAnimationFrame(loop);
+      }; loop();
+      hint.textContent='Usando lector alternativo (ZXing).';
+    }
+    btn.textContent='Detener cámara';
+  }catch(err){
+    console.error(err);
+    hint.textContent='No se pudo abrir la cámara. Permití el acceso o usa el ingreso manual.';
+    toast('No se pudo abrir la cámara');
+  }
+}
+async function stopScanner(){
+  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  if(barcodeReader){ try{ barcodeReader.reset(); }catch{} barcodeReader=null; }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  const video=document.getElementById('video'); try{ video.pause(); }catch{} video.srcObject=null;
+  document.getElementById('scanResultado').textContent='Cámara detenida';
+}
+function setScanMsg(msg){ document.getElementById('scanResultado').textContent=msg; }
+function procesarManual(){
+  const v=(document.getElementById('manualCode').value||'').trim();
+  if(!v) return; handleScan(v);
+}
+async function handleScan(raw){
+  // ¿URL con ?u=&g=&t= ?
+  try{
+    const url=new URL(raw);
+    const u=url.searchParams.get('u'), g=url.searchParams.get('g'), t=url.searchParams.get('t');
+    if(u&&g&&t){ await checkinFromURL(u,g,t); return; }
+  }catch(_){}
+  // Token directo (misma cuenta)
+  const code=(raw||'').trim();
+  const g=state.guests.find(x=>x.token===code);
+  if(!g){ setScanMsg('❌ QR/Token no válido'); return; }
+  const filtroEv=document.getElementById('scanEvento').value;
+  if(filtroEv && g.eventId!==filtroEv){ setScanMsg('⛔ Pertenece a otro evento'); return; }
+  if(g.used){ setScanMsg(`⚠️ Ya usado por ${g.nombre}`); return; }
+  await marcarUsadoYMostrar(g);
+}
+async function checkinFromURL(u,gid,token){
+  if(!state.uid){ setScanMsg('Iniciá sesión para escanear'); return; }
+  if(state.uid!==u){ setScanMsg('⛔ Este QR pertenece a otra cuenta'); return; }
+  try{
+    const tokenHash=await sha256hex(decodeURIComponent(token||'')); 
+    const doc=await colPublic().doc(`${u}_${gid}`).get();
+    if(!doc.exists){ setScanMsg('❌ Enlace inválido'); return; }
+    const data=doc.data();
+    if(data.tokenHash!==tokenHash){ setScanMsg('⛔ Token incorrecto'); return; }
+    const gSnap=await colGuests().doc(gid).get();
+    if(!gSnap.exists){ setScanMsg('❌ Invitación no encontrada'); return; }
+    const guest={id:gid,...gSnap.data()};
+    const filtroEv=document.getElementById('scanEvento').value;
+    if(filtroEv && guest.eventId!==filtroEv){ setScanMsg('⛔ Pertenece a otro evento'); return; }
+    if(guest.used){ setScanMsg(`⚠️ Ya usado por ${guest.nombre}`); return; }
+    await marcarUsadoYMostrar(guest);
+  }catch(e){ console.error(e); setScanMsg('⚠️ Error al validar'); }
+}
+async function marcarUsadoYMostrar(guest){
+  const ts=Date.now();
+  try{ await colGuests().doc(guest.id).update({used:true,usedAt:ts}); }
+  catch(e){ console.error(e); toast('No se pudo marcar el ingreso'); return; }
+  const ev=state.events.find(e=>e.id===guest.eventId);
+  // Flyer simple (texto)
+  const c=document.createElement('canvas'); c.width=1000; c.height=600; const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle='#111827'; ctx.font='900 62px "Poppins",sans-serif'; ctx.fillText('ADMITIDO', 40, 110);
+  ctx.font='700 38px "Poppins",sans-serif'; ctx.fillText(`Invitado: ${guest.nombre}`, 40, 200);
+  ctx.font='600 34px "Poppins",sans-serif'; ctx.fillText(`Evento: ${ev?ev.nombre:''}`, 40, 260);
+  ctx.font='600 30px "Poppins",sans-serif'; ctx.fillText(`Token: ${guest.token}`, 40, 310);
+  ctx.font='500 26px "Poppins",sans-serif'; ctx.fillText('• Acceso registrado. • Para reactivar, usa "Invitaciones caducadas".', 40, 380);
+  const dataUrl=c.toDataURL('image/png');
+  document.getElementById('checkinFlyerImg').src=dataUrl;
+  showModal();
+  setScanMsg(`✅ Bienvenido/a ${guest.nombre} — ${ev?ev.nombre:''}`);
+  renderCaducadas(); filtrarInvitadosActual(); renderInvitadosRecientes();
+}
+function showModal(){ document.getElementById('modalCheckin').style.display='flex'; }
+function hideModal(){ document.getElementById('modalCheckin').style.display='none'; }
+
+/* ===== Boot ===== */
+window.addEventListener('load',async()=>{
+  await initCloud();
+  if(!mustHaveFirebase) return;
+  // si viene con ?u=&g=&t= se podría mostrar landing pública; aquí lo manejamos desde escáner/manual
+});
+</script>
+</body>
+</html>
