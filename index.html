@@ -18,45 +18,22 @@
 <!-- Leer QR (fallback ZXing) -->
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 
-<!-- Fallback robusto de carga para la librería QR (por si el CDN principal tarda o falla) -->
+<!-- Fallback robusto para la librería QR (crea window.qrLibReady) -->
 <script>
-  // Promesa global para esperar a que la lib QR esté lista
-  window.qrLibReady = (function ensureQRCodeLib(){
-    if (window.QRCode && (QRCode.toCanvas || QRCode.CorrectLevel)) return Promise.resolve();
-    function loadScript(src){
-      return new Promise((res,rej)=>{
-        const s=document.createElement('script');
-        s.src=src; s.async=true;
-        s.onload=()=>res(); s.onerror=()=>rej(new Error('No se pudo cargar '+src));
-        document.head.appendChild(s);
-      });
-    }
-    return (async ()=>{
-      const cdns=[
-        "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"
-      ];
-      for(const url of cdns){
-        try{
-          if(!window.QRCode) await loadScript(url);
-          if(window.QRCode) break;
-        }catch(_){}
-      }
-      if(!window.QRCode) console.error("No se pudo cargar la librería QR");
-    })();
+(function ensureQRCodeLib(){
+  if (window.qrLibReady) return;
+  window.qrLibReady = (async () => {
+    function loadedOK(){ return !!(window.QRCode && (QRCode.toCanvas || QRCode.CorrectLevel)); }
+    if (loadedOK()) return true;
+    const loadScript = (src)=>new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    const cdns=[
+      "https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"
+    ];
+    for (const url of cdns){ try{ await loadScript(url); if (loadedOK()) return true; }catch{} }
+    return false;
   })();
-
-  // Promesa para esperar fuentes (Canvas + fuentes web)
-  window.fontsReady = (async ()=>{
-    try{
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      } else {
-        // fallback ~ corto
-        await new Promise(r=>setTimeout(r,300));
-      }
-    }catch(_){}
-  })();
+})();
 </script>
 
 <style>
@@ -118,6 +95,8 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .theme-oro{background:linear-gradient(180deg,#f8e38c,#d4af37)}
 .theme-plata{background:linear-gradient(180deg,#f5f7fa,#cfd8dc)}
 .theme-noche{background:linear-gradient(180deg,#1f2937,#0b1020)}
+/* FAB que existía sin estilos */
+.fab{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;border-radius:999px;padding:12px 16px;box-shadow:var(--shadow);cursor:pointer}
 </style>
 </head>
 <body>
@@ -306,7 +285,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
             </div>
             <div class="field" style="width:200px"><label>&nbsp;</label><button class="btn ok" id="validarManualBtn" type="button">Validar</button></div>
           </div>
-          <div class="help">Tip: la camara requiere HTTPS o localhost.</div>
+          <div class="help">Tip: la cámara requiere HTTPS o localhost.</div>
 
           <div id="scanResultado" style="margin-top:12px" class="mini muted">Estado: esperando…</div>
         </div>
@@ -470,7 +449,8 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
   if(e.target.id==='buscarCad') renderCaducadas();
   if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
-  if(e.target.id==='flyerThemeSel'){ state.ui.flyerTheme=e.target.value;
+  if(e.target.id==='flyerThemeSel'){
+    state.ui.flyerTheme=e.target.value;
     const gid=$('qrCanvas')?.dataset?.guestId; if(gid){ const g=state.guests.find(x=>x.id===gid); if(g){ pintarFlyer(g); } }
   }
 });
@@ -584,7 +564,7 @@ async function registrarInvitado(){
     state.ui.lastGuestId=gid;
     $('invNombre').value='';
 
-    await mostrarInvitacion({id:gid,...guest}); // <— ahora async y espera a QR lib
+    mostrarInvitacion({id:gid,...guest});
     toast('Invitación creada ✔️');
 
     // Public hash (no bloqueante)
@@ -607,57 +587,76 @@ async function registrarInvitado(){
 }
 
 function buildShareURL(g){
-  const base=location.origin+location.pathname;
+  const base = (location.origin && location.origin!=='null') ? (location.origin+location.pathname) : (location.href.split('#')[0].split('?')[0]);
   return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`;
 }
 
-/* Generación QR robusta (async con reintentos) */
-async function makeQR(el,text,size=240){
-  el.innerHTML='';
-  // Esperar lib QR (y un tick por si el CDN aún pinta)
-  await window.qrLibReady;
-  for(let i=0;i<5;i++){
-    try{
-      if(window.QRCode?.toCanvas){
-        const c=document.createElement('canvas'); c.width=c.height=size; el.appendChild(c);
-        await new Promise((res,rej)=>QRCode.toCanvas(c,String(text),{width:size,errorCorrectionLevel:'M',margin:2},(err)=>err?rej(err):res()));
-        return c;
-      }
-      if(window.QRCode){
-        new QRCode(el,{text:String(text),width:size,height:size,correctLevel:(window.QRCode?.CorrectLevel?.M||0)});
-        const node=el.querySelector('canvas,img');
-        if(node) return node;
-      }
-    }catch(err){ /* retry */ }
-    await new Promise(r=>setTimeout(r,120*(i+1)));
-  }
-  console.error('QR Gen error: librería no disponible');
-  const p=document.createElement('div'); p.className='mini muted'; p.textContent='No se pudo generar el QR';
-  el.appendChild(p);
-  return null;
+/* ======== QR GENERATION (ROBUSTO) ======== */
+async function makeQR(el, text, size = 240){
+  el.innerHTML = '';
+  // 1) Intento lib local (qrcode)
+  try {
+    const ok = await (window.qrLibReady || Promise.resolve(false));
+    if (ok && window.QRCode?.toCanvas) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size; el.appendChild(c);
+      await new Promise((res, rej) =>
+        QRCode.toCanvas(c, String(text), { width: size, errorCorrectionLevel:'M', margin: 2 },
+          (err)=> err ? rej(err) : res())
+      );
+      return c;
+    }
+    if (ok && window.QRCode && window.QRCode.CorrectLevel != null){
+      new QRCode(el, { text: String(text), width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+      const node = el.querySelector('canvas,img');
+      if (node) return node;
+    }
+  } catch(_) {}
+
+  // 2) Fallback externo (PNG) — asegura visualización
+  const api = 'https://api.qrserver.com/v1/create-qr-code/';
+  const url = `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
+  const img = document.createElement('img');
+  img.alt = 'QR'; img.width = img.height = size; img.src = url;
+  img.setAttribute('data-external','1'); // Para descarga
+  el.appendChild(img);
+  return img;
 }
 
-async function mostrarInvitacion(guest){
+/* Genera un canvas QR SOLO usando la lib local (para embebido en flyer) */
+async function makeLocalQRCanvas(text, size=260){
+  try{
+    const ok = await (window.qrLibReady || Promise.resolve(false));
+    if (ok && window.QRCode?.toCanvas){
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      await new Promise((res, rej) =>
+        QRCode.toCanvas(c, String(text), { width: size, errorCorrectionLevel:'M', margin: 2 },
+          (err)=> err ? rej(err) : res())
+      );
+      return c;
+    }
+  }catch(_){}
+  return null; // si no hay lib local, no puedo embebido seguro (CORS)
+}
+
+function mostrarInvitacion(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const wrap=$('qrCanvas'); const url=buildShareURL(guest);
-  const node = await makeQR(wrap,url,260);
-  wrap.dataset.guestId=guest.id;
+  makeQR(wrap,url,260); wrap.dataset.guestId=guest.id;
   $('qrNombre').textContent=guest.nombre;
   $('qrToken').textContent=guest.token;
   $('qrEvento').textContent=ev?ev.nombre:'—';
   $('qrPreview').classList.remove('hidden');
-  await pintarFlyer(guest);
+  pintarFlyer(guest);
 }
 
-/* ===== Flyer con temas (para enviar al invitado) ===== */
+/* ===== Flyer con temas y (si se puede) QR embebido ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
 
-  // Asegurar fuentes listas
-  await window.fontsReady;
-
-  const c=document.createElement('canvas'); c.width=1200; c.height=675; // 16:9 para WhatsApp
+  const c=document.createElement('canvas'); c.width=1200; c.height=675; // 16:9
   const ctx=c.getContext('2d');
 
   // Fondo por tema
@@ -681,16 +680,16 @@ async function pintarFlyer(guest){
     ctx.fillStyle='#f3f4f6';
   }
 
-  // Título “Estás invitado/a a”
+  // Título
   ctx.font='800 46px "Poppins",sans-serif';
   ctx.fillText('ESTÁS INVITADO/A A', 60, 110);
 
-  // Nombre del evento grande
+  // Evento
   ctx.font='900 72px "Poppins",sans-serif';
   const evName = ev ? ev.nombre : '';
   ctx.fillText(evName, 60, 190);
 
-  // Nombre del invitado
+  // Invitado
   ctx.font='700 40px "Poppins",sans-serif';
   ctx.fillText(`Invitado/a: ${guest.nombre}`, 60, 260);
 
@@ -707,18 +706,66 @@ async function pintarFlyer(guest){
   ctx.fillRect(60, 420, 1080, 160);
   ctx.globalAlpha = 1;
 
+  // Intento embebido del QR (solo si tengo lib local -> canvas propio sin CORS)
+  const url=buildShareURL(guest);
+  const qrCan = await makeLocalQRCanvas(url, 260);
+  if(qrCan){
+    const qrX = c.width - 60 - 260;
+    const qrY = 60;
+    // Marco blanco + sombra
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.18)';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
+    ctx.restore();
+    ctx.drawImage(qrCan, qrX, qrY, 260, 260);
+  }else{
+    // Marcador si no hay QR embebible
+    const boxX = c.width - 60 - 260;
+    const boxY = 60;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.8)';
+    roundRect(ctx, boxX-10, boxY-10, 280, 280, 16); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.5)';
+    ctx.font='800 32px "Poppins",sans-serif';
+    ctx.fillText('QR', boxX+100, boxY+140);
+    ctx.restore();
+  }
+
   state.flyers.lastDataUrl=c.toDataURL('image/png');
   $('checkinFlyerImg').src=state.flyers.lastDataUrl;
+}
+function roundRect(ctx, x, y, w, h, r){
+  const rr = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
 }
 
 /* Descargar QR / Imprimir */
 function descargarQR(){
   const wrap=$('qrCanvas'); if(!wrap) return;
   const node=wrap.querySelector('canvas,img'); if(!node) return;
-  let url=''; if(node.tagName.toLowerCase()==='canvas'){url=node.toDataURL('image/png');}
-  else { const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h; c.getContext('2d').drawImage(node,0,0,w,h); url=c.toDataURL('image/png'); }
   const g=state.guests.find(x=>x.id===wrap.dataset.guestId); const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
-  const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=url; a.click();
+
+  if(node.tagName.toLowerCase()==='canvas'){
+    const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.toDataURL('image/png'); a.click(); return;
+  }
+  if(node.tagName.toLowerCase()==='img' && node.getAttribute('data-external')==='1'){
+    const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.src; a.click(); return;
+  }
+  try{
+    const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h;
+    c.getContext('2d').drawImage(node,0,0,w,h);
+    const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=c.toDataURL('image/png'); a.click();
+  }catch(e){
+    window.open(node.src,'_blank');
+  }
 }
 function imprimirQR(){
   const wrap=$('qrCanvas'); if(!wrap) return;
