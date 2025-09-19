@@ -95,8 +95,8 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .theme-oro{background:linear-gradient(180deg,#f8e38c,#d4af37)}
 .theme-plata{background:linear-gradient(180deg,#f5f7fa,#cfd8dc)}
 .theme-noche{background:linear-gradient(180deg,#1f2937,#0b1020)}
-/* FAB que existía sin estilos */
 .fab{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;border-radius:999px;padding:12px 16px;box-shadow:var(--shadow);cursor:pointer}
+.scan-big{font-weight:800;font-size:1.05rem}
 </style>
 </head>
 <body>
@@ -222,11 +222,29 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                       <option value="oro">Oro</option>
                       <option value="plata">Plata</option>
                       <option value="noche">Noche</option>
+                      <option value="personalizado">Personalizado</option>
                     </select>
                     <span class="theme-dot theme-oro" title="Oro"></span>
                     <span class="theme-dot theme-plata" title="Plata"></span>
                     <span class="theme-dot theme-noche" title="Noche"></span>
                   </div>
+
+                  <!-- Colores personalizados -->
+                  <div id="customColors" class="row hidden">
+                    <div class="field" style="width:150px">
+                      <label class="mini">Fondo A</label>
+                      <input type="color" id="colorBg1" value="#ffffff" />
+                    </div>
+                    <div class="field" style="width:150px">
+                      <label class="mini">Fondo B</label>
+                      <input type="color" id="colorBg2" value="#d4af37" />
+                    </div>
+                    <div class="field" style="width:150px">
+                      <label class="mini">Texto</label>
+                      <input type="color" id="colorText" value="#2a1f0b" />
+                    </div>
+                  </div>
+
                   <div>
                     <strong id="qrNombre"></strong>
                     <div class="mini">Evento: <span id="qrEvento"></span></div>
@@ -329,7 +347,13 @@ const state = {
   uid:null,
   events:[],
   guests:[],
-  ui:{ currentTab:'eventos', invitadosEventoActual:null, flyerTheme:'oro', lastGuestId:null },
+  ui:{
+    currentTab:'eventos',
+    invitadosEventoActual:null,
+    flyerTheme:'oro',
+    lastGuestId:null,
+    customColors:{ bg1:'#ffffff', bg2:'#d4af37', text:'#2a1f0b' }
+  },
   flyers:{ lastDataUrl:null }
 };
 let db=null, auth=null;
@@ -451,10 +475,26 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
   if(e.target.id==='flyerThemeSel'){
     state.ui.flyerTheme=e.target.value;
-    const gid=$('qrCanvas')?.dataset?.guestId; if(gid){ const g=state.guests.find(x=>x.id===gid); if(g){ pintarFlyer(g); } }
+    $('customColors').classList.toggle('hidden', state.ui.flyerTheme!=='personalizado');
+    repaintFlyerIfAny();
+  }
+  if(e.target.id==='colorBg1' || e.target.id==='colorBg2' || e.target.id==='colorText'){
+    state.ui.customColors = {
+      bg1: $('colorBg1').value,
+      bg2: $('colorBg2').value,
+      text: $('colorText').value
+    };
+    repaintFlyerIfAny();
   }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
+
+function repaintFlyerIfAny(){
+  const gid=$('qrCanvas')?.dataset?.guestId;
+  if(!gid) return;
+  const g=state.guests.find(x=>x.id===gid);
+  if(g) pintarFlyer(g);
+}
 
 function syncUIAuth(){
   const logged = !!state.user;
@@ -613,7 +653,7 @@ async function makeQR(el, text, size = 240){
     }
   } catch(_) {}
 
-  // 2) Fallback externo visible inmediato (IMG) — solo para previsualización
+  // 2) Fallback externo (PNG) — asegura visualización
   const api = 'https://api.qrserver.com/v1/create-qr-code/';
   const url = `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
   const img = document.createElement('img');
@@ -623,57 +663,19 @@ async function makeQR(el, text, size = 240){
   return img;
 }
 
-/* === NUEVO: canvas QR garantizado para incrustar en flyer === */
+/* Genera un canvas QR SOLO usando la lib local (para embebido en flyer) */
 async function makeLocalQRCanvas(text, size=260){
-  // a) si hay lib local, uso toCanvas
-  try{
-    const ok = await (window.qrLibReady || Promise.resolve(false));
-    if (ok && window.QRCode?.toCanvas){
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      await new Promise((res, rej) =>
-        QRCode.toCanvas(c, String(text), { width: size, errorCorrectionLevel:'M', margin: 2 },
-          (err)=> err ? rej(err) : res())
-      );
-      return c;
-    }
-  }catch(_){}
-
-  // b) sin lib: bajo PNG con fetch y lo dibujo en un canvas propio (no tainta CORS porque es blob:)
-  try{
-    const api = 'https://api.qrserver.com/v1/create-qr-code/';
-    const url = `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
-    const resp = await fetch(url, {mode:'cors', cache:'no-store'});
-    if(resp.ok){
-      const blob = await resp.blob();
-      const bmp = await createImageBitmap(blob);
-      const c = document.createElement('canvas');
-      c.width = c.height = size;
-      const ctx = c.getContext('2d');
-      ctx.drawImage(bmp, 0, 0, size, size);
-      return c;
-    }
-  }catch(_){}
-
-  // c) última opción: placeholder cuadriculado (no escaneable) para no romper el diseño
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
-  // cuadricula basada en hash simple
-  const seed = await sha256hex(String(text));
-  const n=29; const cell = Math.floor(size/n);
-  for (let y=0; y<n; y++){
-    for (let x=0; x<n; x++){
-      const idx = (x + y*n) % seed.length;
-      const on = parseInt(seed[idx],16) % 2 === 0;
-      ctx.fillStyle = on ? '#000' : '#fff';
-      ctx.fillRect(x*cell, y*cell, cell, cell);
-    }
+  const ok = await (window.qrLibReady || Promise.resolve(false));
+  if (ok && window.QRCode?.toCanvas){
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    await new Promise((res, rej) =>
+      QRCode.toCanvas(c, String(text), { width: size, errorCorrectionLevel:'M', margin: 2 },
+        (err)=> err ? rej(err) : res())
+    );
+    return c;
   }
-  // borde
-  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.strokeRect(1,1,size-2,size-2);
-  return c;
+  return null; // si no hay lib local, no puedo embebido seguro (CORS)
 }
 
 function mostrarInvitacion(guest){
@@ -684,13 +686,17 @@ function mostrarInvitacion(guest){
   $('qrToken').textContent=guest.token;
   $('qrEvento').textContent=ev?ev.nombre:'—';
   $('qrPreview').classList.remove('hidden');
-  pintarFlyer(guest);
+  pintarFlyer(guest); // genera flyer con QR embebido garantizado
 }
 
-/* ===== Flyer con temas y (siempre) QR embebido ===== */
+/* ===== Flyer con temas y (si se puede) QR embebido ===== */
 async function pintarFlyer(guest){
+  // Espero a que la lib de QR esté lista para poder embebirlo SIEMPRE
+  await (window.qrLibReady || Promise.resolve(false));
+
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
+  const { bg1, bg2, text } = state.ui.customColors || { bg1:'#ffffff', bg2:'#d4af37', text:'#2a1f0b' };
 
   const c=document.createElement('canvas'); c.width=1200; c.height=675; // 16:9
   const ctx=c.getContext('2d');
@@ -708,12 +714,17 @@ async function pintarFlyer(guest){
     ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
     ctx.fillStyle='rgba(0,0,0,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);}
     ctx.fillStyle='#263238';
-  } else { // noche
+  } else if(theme==='noche'){
     const g=ctx.createLinearGradient(0,0,0,c.height);
     g.addColorStop(0,'#0b1020'); g.addColorStop(1,'#1f2937');
     ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
     ctx.fillStyle='rgba(255,255,255,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);}
     ctx.fillStyle='#f3f4f6';
+  } else { // personalizado
+    const g=ctx.createLinearGradient(0,0,0,c.height);
+    g.addColorStop(0,bg1); g.addColorStop(1,bg2);
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle=text;
   }
 
   // Título
@@ -742,20 +753,32 @@ async function pintarFlyer(guest){
   ctx.fillRect(60, 420, 1080, 160);
   ctx.globalAlpha = 1;
 
-  // QR embebido (garantizado)
+  // QR embebido (SIEMPRE que la lib local esté disponible)
   const url=buildShareURL(guest);
-  const qrCan = await makeLocalQRCanvas(url, 260);
+  let qrCan = await makeLocalQRCanvas(url, 260);
+  if(!qrCan){
+    // último intento por si la lib cargó unos ms después
+    await new Promise(r=>setTimeout(r,100));
+    qrCan = await makeLocalQRCanvas(url, 260);
+  }
   const qrX = c.width - 60 - 260;
   const qrY = 60;
-
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,.18)';
   ctx.shadowBlur = 12;
   ctx.fillStyle = '#fff';
   roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
   ctx.restore();
-
-  ctx.drawImage(qrCan, qrX, qrY, 260, 260);
+  if(qrCan){
+    ctx.drawImage(qrCan, qrX, qrY, 260, 260);
+  }else{
+    // Si por alguna razón extrema no hay canvas QR, muestro marcador (muy improbable)
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.5)';
+    ctx.font='800 32px "Poppins",sans-serif';
+    ctx.fillText('QR', qrX+100, qrY+140);
+    ctx.restore();
+  }
 
   state.flyers.lastDataUrl=c.toDataURL('image/png');
   $('checkinFlyerImg').src=state.flyers.lastDataUrl;
@@ -910,40 +933,87 @@ async function reactivarInvitacion(guestId){
   catch(e){ console.error(e); toast('Error al reactivar'); }
 }
 
-/* ===== Escaneo ===== */
-let stream=null, barcodeReader=null, rafId=null;
+/* ===== Escaneo (robusto) ===== */
+let stream=null, barcodeReader=null, rafId=null, scanning=false;
+let lastScanValue='', lastScanAt=0;
+
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(); const g=ctx.createGain();
+    o.type='square'; o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(0.05, ctx.currentTime);
+    o.start(); o.stop(ctx.currentTime+0.08);
+  }catch(_){}
+}
+function vibrate(ms=60){ try{ navigator.vibrate&&navigator.vibrate(ms);}catch(_){ } }
+
 async function toggleScanner(){
   const btn=$('scanBtn'); const hint=$('cameraHint');
   if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+    const devices = await navigator.mediaDevices.enumerateDevices().catch(()=>[]);
+    const backCam = devices.find(d=>d.kind==='videoinput' && /back|rear|environment/i.test(d.label)) || devices.find(d=>d.kind==='videoinput');
+    const constraints = backCam ? {video:{deviceId:{exact:backCam.deviceId}}} : {video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}};
+
+    stream=await navigator.mediaDevices.getUserMedia(constraints);
     const video=$('video'); video.srcObject=stream; await video.play();
     $('scanResultado').textContent='Cámara lista. Escaneando…'; hint.textContent='';
+
+    scanning=true;
     if('BarcodeDetector' in window){
       const det = new window.BarcodeDetector({formats:['qr_code']});
-      const loop=async()=>{ try{ const codes=await det.detect(video); if(codes && codes.length){ await handleScan(codes[0].rawValue); } }catch(_){}
-        rafId=requestAnimationFrame(loop); }; loop();
+      const loop=async()=>{
+        if(!scanning) return;
+        try{
+          const codes=await det.detect(video);
+          if(codes && codes.length){
+            await onDetected(codes[0].rawValue);
+            // pequeña pausa para evitar spam
+            await new Promise(r=>setTimeout(r,350));
+          }
+        }catch(_){}
+        rafId=requestAnimationFrame(loop);
+      }; loop();
+      hint.textContent='Lector: BarcodeDetector';
     } else {
-      barcodeReader = new ZXing.BrowserMultiFormatReader();
-      const loop=async()=>{ try{ const result=await barcodeReader.decodeOnceFromVideoElement(video).catch(()=>null);
-        if(result && result.text){ await handleScan(result.text); } }catch(_){}
-        rafId=requestAnimationFrame(loop); }; loop();
-      hint.textContent='Usando lector alternativo (ZXing).';
+      barcodeReader = new ZXing.BrowserQRCodeReader();
+      await barcodeReader.decodeFromVideoDevice(backCam?backCam.deviceId:undefined, 'video', async (result,err)=>{
+        if(!scanning) return;
+        if(result && result.text){
+          await onDetected(result.text);
+        }
+      });
+      hint.textContent='Lector alternativo: ZXing';
     }
     btn.textContent='Detener cámara';
   }catch(err){
     console.error(err);
-    hint.textContent='No se pudo abrir la cámara. Permití el acceso o usa el ingreso manual.'; toast('No se pudo abrir la cámara');
+    $('cameraHint').textContent='No se pudo abrir la cámara. Permití el acceso o usa el ingreso manual.'; toast('No se pudo abrir la cámara');
   }
 }
 async function stopScanner(){
+  scanning=false;
   if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
-  if(barcodeReader){ try{ barcodeReader.reset(); }catch{} barcodeReader=null; }
+  if(barcodeReader){ try{ await barcodeReader.reset(); }catch{} barcodeReader=null; }
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
   const video=$('video'); try{ video.pause(); }catch{} video.srcObject=null;
   $('scanResultado').textContent='Cámara detenida';
 }
-function setScanMsg(msg){ $('scanResultado').textContent=msg; }
+
+async function onDetected(value){
+  const now=Date.now();
+  if(value===lastScanValue && (now-lastScanAt)<1200) return; // anti doble lectura
+  lastScanValue=value; lastScanAt=now;
+  beep(); vibrate(40);
+  await handleScan(value);
+}
+
+function setScanMsg(msg, big=false){
+  const el=$('scanResultado');
+  el.innerHTML = big ? `<span class="scan-big">${msg}</span>` : msg;
+}
+
 function procesarManual(){ const v=($('manualCode').value||'').trim(); if(!v) return; handleScan(v); }
 
 async function handleScan(raw){
@@ -960,6 +1030,7 @@ async function handleScan(raw){
   if(g.used){ setScanMsg(`⚠️ Ya usado por ${g.nombre}`); return; }
   await marcarUsadoYMostrar(g);
 }
+
 async function checkinFromURL(u,gid,token){
   if(!state.uid){ setScanMsg('Iniciá sesión para escanear'); return; }
   if(state.uid!==u){ setScanMsg('⛔ Este QR pertenece a otra cuenta'); return; }
@@ -978,14 +1049,21 @@ async function checkinFromURL(u,gid,token){
     await marcarUsadoYMostrar(guest);
   }catch(e){ console.error(e); setScanMsg('⚠️ Error al validar'); }
 }
+
 async function marcarUsadoYMostrar(guest){
   const ts=Date.now();
   try{ await colGuests().doc(guest.id).update({used:true,usedAt:ts}); }
   catch(e){ console.error(e); toast('No se pudo marcar el ingreso'); return; }
+
+  // Flyer (con QR embebido) y modal
   await pintarFlyer(guest);
   showModal();
+
   const ev=state.events.find(e=>e.id===guest.eventId);
-  setScanMsg(`✅ Bienvenido/a ${guest.nombre} — ${ev?ev.nombre:''}`);
+  // Mensaje grande con Invitado + Evento (para control)
+  setScanMsg(`✅ Invitado: ${escapeHtml(guest.nombre)} · Evento: ${escapeHtml(ev?ev.nombre:'')}`, true);
+
+  // Refrescos de vistas
   renderCaducadas(); filtrarInvitadosActual(); renderInvitadosRecientes();
 }
 function showModal(){ $('modalCheckin').style.display='flex'; }
