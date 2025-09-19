@@ -13,12 +13,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-<!-- Generar QR (QRCode v1.5.3) -->
+<!-- Generar QR -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <!-- Leer QR (fallback ZXing) -->
 <script src="https://unpkg.com/@zxing/library@0.20.0"></script>
 
-<!-- Fallback robusto para la librería QR (crea window.qrLibReady) -->
+<!-- Fallback robusto para la librería QR -->
 <script>
 (function ensureQRCodeLib(){
   if (window.qrLibReady) return;
@@ -83,14 +83,8 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .qr-box{display:grid;place-items:center;padding:12px;border-radius:16px;background:#fafafa;border:1px dashed rgba(212,175,55,.5)}
 .video{width:100%;max-height:360px;border-radius:16px;border:1px solid rgba(0,0,0,.12);background:#000;position:relative}
 .scan-wrap{position:relative}
-.scan-overlay{
-  pointer-events:none;position:absolute;inset:0;display:grid;place-items:center;
-}
-.scan-frame{
-  width:min(70%,520px);height:min(70vw,320px);
-  border:3px solid rgba(255,255,255,.9); border-radius:14px;
-  box-shadow:0 0 0 200vw rgba(0,0,0,.35) inset;
-}
+.scan-overlay{pointer-events:none;position:absolute;inset:0;display:grid;place-items:center}
+.scan-frame{width:min(70%,520px);height:min(70vw,320px);border:3px solid rgba(255,255,255,.95);border-radius:14px;box-shadow:0 0 0 200vw rgba(0,0,0,.35) inset}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:200}
 .modal-body{background:#fff;border:var(--border);border-radius:18px;box-shadow:var(--shadow);padding:12px;max-width:780px;width:100%}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:var(--border)}
@@ -107,10 +101,13 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .fab{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;border-radius:999px;padding:12px 16px;box-shadow:var(--shadow);cursor:pointer}
 .color-pick{display:flex;gap:10px;align-items:center}
 .color-pick input[type="color"]{width:38px;height:32px;border-radius:8px;border:1px solid rgba(0,0,0,.15);padding:0}
-.badge.succ{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
-.badge.warn{background:rgba(234,179,8,.15);border-color:rgba(234,179,8,.35);color:#713f12}
 .logo-row{display:flex;gap:8px;align-items:center}
-.logo-prev{width:120px;height:60px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;object-fit:contain;background:#fff}
+.logo-prev{width:140px;height:70px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;object-fit:contain;background:#fff}
+.logo-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}
+.logo-editor.active{display:block}
+.logo-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
+.logo-grid .field{min-width:0}
+.badge.succ{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
 </style>
 </head>
 <body>
@@ -218,15 +215,14 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
     <div id="vista-invitados" class="hidden">
       <div class="grid two">
 
-        <!-- IDENTIDAD (LOGO) SIEMPRE VISIBLE -->
+        <!-- IDENTIDAD -->
         <div class="card">
-          <div class="card-h"><strong>Identidad (logo)</strong><span class="mini muted">Se aplica a todos los flyers</span></div>
+          <div class="card-h"><strong>Identidad (logo global)</strong><span class="mini muted">Se aplica a todos los flyers</span></div>
           <div class="card-c">
             <div class="logo-row">
               <img id="logoPreviewTop" class="logo-prev" alt="Logo" />
               <input id="logoFileTop" type="file" accept="image/*" />
               <button class="btn ghost" id="clearLogoBtnTop" type="button">Quitar logo</button>
-              <span class="help">Se guarda en tu navegador (localStorage).</span>
             </div>
           </div>
         </div>
@@ -240,7 +236,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
               <div class="field" style="width:220px"><label>&nbsp;</label><button class="btn gold" id="registrarInvitadoBtn" type="button">Crear invitación + QR</button></div>
             </div>
 
-            <!-- Config flyer/QR -->
             <div id="qrPreview" class="hidden" style="margin-top:12px">
               <div class="grid two">
                 <div class="qr-box"><div id="qrCanvas" data-guest-id=""></div></div>
@@ -253,9 +248,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                       <option value="noche">Noche</option>
                       <option value="custom">Personalizado</option>
                     </select>
-                    <span class="theme-dot theme-oro" title="Oro"></span>
-                    <span class="theme-dot theme-plata" title="Plata"></span>
-                    <span class="theme-dot theme-noche" title="Noche"></span>
                   </div>
 
                   <div class="color-pick">
@@ -264,12 +256,38 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     <label class="mini">Texto <input type="color" id="txColorPick" value="#1f2937"></label>
                   </div>
 
-                  <!-- Logo inline (opcional) -->
+                  <!-- Logo inline -->
                   <div class="logo-row">
                     <label class="mini">Logo:</label>
                     <img id="logoPreview" class="logo-prev" alt="Logo" />
                     <input id="logoFile" type="file" accept="image/*" />
                     <button class="btn ghost" id="clearLogoBtn" type="button">Quitar logo</button>
+                    <button class="btn ok" id="toggleLogoEditorBtn" type="button">Editar logo</button>
+                  </div>
+
+                  <!-- Editor de logo -->
+                  <div id="logoEditor" class="logo-editor">
+                    <div class="logo-grid">
+                      <div class="field">
+                        <label>Tamaño (escala 10–300%)</label>
+                        <input id="logoScale" type="range" min="10" max="300" step="1">
+                      </div>
+                      <div class="field">
+                        <label>Posición X</label>
+                        <input id="logoX" type="range" min="0" max="1200" step="1">
+                      </div>
+                      <div class="field">
+                        <label>Posición Y</label>
+                        <input id="logoY" type="range" min="0" max="675" step="1">
+                      </div>
+                      <div class="field">
+                        <label>&nbsp;</label>
+                        <div class="row">
+                          <button class="btn ghost" id="logoResetBtn" type="button">Reset</button>
+                          <button class="btn ok" id="logoToggleBtn" type="button">Mostrar/ocultar</button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -287,7 +305,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                 </div>
               </div>
             </div>
-            <!-- /Config flyer/QR -->
 
           </div>
         </div>
@@ -321,7 +338,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
           </div>
 
           <div class="row" style="margin-top:8px;align-items:center">
-            <span class="badge warn">Tip: Cámara requiere HTTPS o localhost</span>
+            <span class="badge succ">Tip: Usá HTTPS o localhost para cámara</span>
             <div class="row" style="margin-left:auto;gap:8px;align-items:center">
               <label class="mini">Resolución
                 <select id="resSel">
@@ -334,7 +351,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
             </div>
           </div>
 
-          <div class="scan-wrap" style="position:relative;margin-top:8px">
+          <div class="scan-wrap" style="margin-top:8px">
             <video id="video" class="video" playsinline autoplay muted></video>
             <div id="scanOverlay" class="scan-overlay"><div class="scan-frame"></div></div>
           </div>
@@ -397,7 +414,8 @@ const state = {
     lastGuestId:null,
     bgColor:'#ffffff',
     txColor:'#1f2937',
-    logoDataUrl: localStorage.getItem('fq_logo') || null
+    logoDataUrl: localStorage.getItem('fq_logo') || null,
+    logo: JSON.parse(localStorage.getItem('fq_logo_cfg')||'{"x":60,"y":560,"scale":160,"visible":true}')
   },
   flyers:{ lastDataUrl:null }
 };
@@ -407,10 +425,10 @@ const mustHaveFirebase = !!(firebaseConfig && firebaseConfig.apiKey);
 /* ===== Utils ===== */
 const $ = (id)=>document.getElementById(id);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
-function escapeHtml(s){return (s||'').replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function escapeHtml(s){return (s||'').replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;","">":"&gt;","\"":"&quot;"}[c]));}
 function newToken(){return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();}
 
-/* Hash con fallback (si no hay HTTPS/crypto.subtle) */
+/* Hash con fallback */
 async function sha256hex(str){
   try{
     if (window.isSecureContext && crypto?.subtle){
@@ -515,20 +533,20 @@ document.addEventListener('click',(e)=>{
   if(t.id==='fabScan'){showTab('escanear'); setTimeout(()=>toggleScanner(),200);}
   if(t.id==='modalCloseBtn'||t.id==='modalCheckin') hideModal();
   if(t.id==='torchBtn') toggleTorch();
-  if(t.id==='clearLogoBtn') clearLogo();
-  if(t.id==='clearLogoBtnTop') clearLogo();
+  if(t.id==='clearLogoBtn' || t.id==='clearLogoBtnTop') clearLogo();
+  if(t.id==='toggleLogoEditorBtn'){ $('logoEditor').classList.toggle('active'); }
+  if(t.id==='logoResetBtn') resetLogoCfg();
+  if(t.id==='logoToggleBtn') toggleLogoVisible();
 });
 document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
   if(e.target.id==='buscarCad') renderCaducadas();
   if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
-  if(e.target.id==='flyerThemeSel'){
-    state.ui.flyerTheme=e.target.value;
-    repaintCurrentFlyer();
-  }
+  if(e.target.id==='flyerThemeSel'){ state.ui.flyerTheme=e.target.value; repaintCurrentFlyer(); }
   if(e.target.id==='bgColorPick'){ state.ui.bgColor=e.target.value; repaintCurrentFlyer(); }
   if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; repaintCurrentFlyer(); }
   if(e.target.id==='logoFile' || e.target.id==='logoFileTop'){ handleLogoUpload(e.target.files?.[0]); }
+  if(e.target.id==='logoScale' || e.target.id==='logoX' || e.target.id==='logoY'){ updateLogoCfgFromInputs(); }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
@@ -548,9 +566,8 @@ function syncUIAuth(){
     renderEventos();
     renderInvitadosRecientes();
     renderCaducadas();
-    // restaurar logo
-    updateLogoPreview();
-    updateLogoPreviewTop();
+    updateLogoPreview(); updateLogoPreviewTop();
+    initLogoEditorInputs();
   }
   $('modeBadge').textContent = 'cloud';
 }
@@ -650,7 +667,6 @@ async function registrarInvitado(){
     mostrarInvitacion({id:gid,...guest});
     toast('Invitación creada ✔️');
 
-    // Public hash (no bloqueante)
     (async()=>{
       try{
         const ev=state.events.find(e=>e.id===eventId);
@@ -680,7 +696,7 @@ function buildShareURL(g){
   return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`;
 }
 
-/* ======== QR GENERATION helpers ======== */
+/* ======== QR GENERATION ======== */
 async function makeQR(el, text, size = 240){
   el.innerHTML = '';
   try {
@@ -701,7 +717,6 @@ async function makeQR(el, text, size = 240){
     }
   } catch(_) {}
 
-  // Fallback externo (PNG)
   const img = await externalQRImage(text, size);
   el.appendChild(img);
   return img;
@@ -722,8 +737,7 @@ async function makeLocalQRCanvas(text, size=260){
   return null;
 }
 function externalQRImageSrc(text,size){
-  const api = 'https://api.qrserver.com/v1/create-qr-code/';
-  return `${api}?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
 }
 function externalQRImage(text,size){
   return new Promise((res,rej)=>{
@@ -752,20 +766,14 @@ function mostrarInvitacion(guest){
   pintarFlyer(guest);
 }
 
-/* ===== Logo (subir/quitar) ===== */
+/* ===== Logo ===== */
 function updateLogoPreview(){
   const prev=$('logoPreview');
-  if(prev){
-    if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
-    else { prev.src=''; prev.classList.add('hidden'); }
-  }
+  if(prev){ if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); } else { prev.src=''; prev.classList.add('hidden'); } }
 }
 function updateLogoPreviewTop(){
   const prev=$('logoPreviewTop');
-  if(prev){
-    if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
-    else { prev.src=''; prev.classList.add('hidden'); }
-  }
+  if(prev){ if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); } else { prev.src=''; prev.classList.add('hidden'); } }
 }
 function handleLogoUpload(file){
   if(!file) return;
@@ -773,8 +781,7 @@ function handleLogoUpload(file){
   reader.onload = ()=>{
     state.ui.logoDataUrl = reader.result;
     localStorage.setItem('fq_logo', state.ui.logoDataUrl);
-    updateLogoPreview();
-    updateLogoPreviewTop();
+    updateLogoPreview(); updateLogoPreviewTop();
     repaintCurrentFlyer();
     toast('Logo actualizado ✔️');
   };
@@ -783,23 +790,45 @@ function handleLogoUpload(file){
 function clearLogo(){
   state.ui.logoDataUrl=null;
   localStorage.removeItem('fq_logo');
-  updateLogoPreview();
-  updateLogoPreviewTop();
   repaintCurrentFlyer();
+  updateLogoPreview(); updateLogoPreviewTop();
   toast('Logo quitado');
 }
+/* Editor de logo (posición/tamaño) */
+function initLogoEditorInputs(){
+  $('logoScale').value = state.ui.logo.scale;
+  $('logoX').value = state.ui.logo.x;
+  $('logoY').value = state.ui.logo.y;
+}
+function updateLogoCfgFromInputs(){
+  state.ui.logo.scale = parseInt($('logoScale').value||160,10);
+  state.ui.logo.x = parseInt($('logoX').value||60,10);
+  state.ui.logo.y = parseInt($('logoY').value||560,10);
+  localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo));
+  repaintCurrentFlyer();
+}
+function resetLogoCfg(){
+  state.ui.logo = {x:60,y:560,scale:160,visible:true};
+  localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo));
+  initLogoEditorInputs(); repaintCurrentFlyer();
+}
+function toggleLogoVisible(){
+  state.ui.logo.visible = !state.ui.logo.visible;
+  localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo));
+  repaintCurrentFlyer();
+}
 
-/* ===== Flyer ===== */
+/* ===== Flyer (sin franja gris) ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
   const bgPick = state.ui.bgColor;
   const txPick = state.ui.txColor;
 
-  const c=document.createElement('canvas'); c.width=1200; c.height=675; // 16:9
+  const c=document.createElement('canvas'); c.width=1200; c.height=675;
   const ctx=c.getContext('2d');
 
-  // Fondo (temas o personalizado)
+  // Fondo
   if(theme==='oro'){
     const g=ctx.createLinearGradient(0,0,0,c.height);
     g.addColorStop(0,'#fff7d1'); g.addColorStop(.55,'#f5d777'); g.addColorStop(1,'#d4af37');
@@ -819,73 +848,52 @@ async function pintarFlyer(guest){
     ctx.fillStyle = bgPick || '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
   }
 
-  // Color de texto
+  // Texto
   ctx.fillStyle = (theme==='noche') ? '#f3f4f6' : (txPick || '#1f2937');
 
-  // Título
   ctx.font='800 46px "Poppins",sans-serif';
   ctx.fillText('ESTÁS INVITADO/A A', 60, 110);
 
-  // Evento
   ctx.font='900 72px "Poppins",sans-serif';
   const evName = ev ? ev.nombre : '';
   wrapText(ctx, evName, 60, 190, 680, 72);
 
-  // Invitado
   ctx.font='700 40px "Poppins",sans-serif';
   wrapText(ctx, `Invitado/a: ${guest.nombre}`, 60, 260, 680, 40);
 
-  // Token
   ctx.font='600 34px "Poppins",sans-serif';
   ctx.fillText(`Token: ${guest.token}`, 60, 310);
 
-  // Pie
   ctx.font='500 26px "Poppins",sans-serif';
   ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 370);
 
-  // Franja inferior (logo)
-  const barY = c.height - 130;
-  ctx.globalAlpha = 0.22; ctx.fillStyle = '#000'; ctx.fillRect(40, barY, c.width-80, 90); ctx.globalAlpha = 1;
-
-  // QR SIEMPRE
+  // QR (siempre)
   const url=buildShareURL(guest);
   let qrCan = await makeLocalQRCanvas(url, 260);
   if(!qrCan){ try{ qrCan = await externalQRCanvas(url, 260); }catch(_){ } }
-  const qrX = c.width - 60 - 260;
-  const qrY = 60;
+  const qrX = c.width - 60 - 260, qrY = 60;
   if(qrCan){
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 12;
-    ctx.fillStyle = '#fff'; roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
-    ctx.restore();
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=12;
+    ctx.fillStyle='#fff'; roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill(); ctx.restore();
     ctx.drawImage(qrCan, qrX, qrY, 260, 260);
   }else{
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,.95)';
-    roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
-    ctx.fillStyle = '#9CA3AF';
-    ctx.font='800 28px "Poppins",sans-serif';
-    wrapText(ctx,'QR no disponible', qrX+40, qrY+120, 200, 28, 34);
-    ctx.restore();
+    ctx.save(); ctx.fillStyle='rgba(255,255,255,.95)'; roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
+    ctx.fillStyle='#9CA3AF'; ctx.font='800 28px "Poppins",sans-serif'; wrapText(ctx,'QR no disponible', qrX+40, qrY+120, 200, 28, 34); ctx.restore();
   }
 
-  // LOGO
-  if(state.ui.logoDataUrl){
+  // LOGO grande configurable
+  if(state.ui.logoDataUrl && state.ui.logo.visible){
     try{
       const img = await loadImage(state.ui.logoDataUrl);
-      const maxW = 360, maxH = 70;
-      let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
-      const r = Math.min(maxW/w, maxH/h);
-      w=Math.round(w*r); h=Math.round(h*r);
-      const lx = 60, ly = barY + Math.round((90 - h)/2);
-      ctx.drawImage(img, lx, ly, w, h);
+      const baseW = 360; // base para escala 100
+      const scale = (state.ui.logo.scale||160)/100;
+      const w = Math.max(40, Math.round(baseW*scale));
+      const ratio = (img.naturalWidth||img.width) / (img.naturalHeight||img.height);
+      const h = Math.round(w/ratio);
+      const x = Math.min(Math.max(0, state.ui.logo.x||60), 1200-w);
+      const y = Math.min(Math.max(0, state.ui.logo.y||560), 675-h);
+      ctx.drawImage(img, x, y, w, h);
     }catch(e){ console.warn('Logo invalido', e); }
-  }else{
-    ctx.save();
-    ctx.fillStyle=(theme==='noche')?'#f3f4f6':'#111827';
-    ctx.font='800 42px "Poppins",sans-serif';
-    ctx.fillText('OK EVENTOS', 60, barY+60);
-    ctx.restore();
   }
 
   state.flyers.lastDataUrl=c.toDataURL('image/png');
@@ -914,30 +922,15 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x,y,x+w,y,rr);
   ctx.closePath();
 }
-function loadImage(src){
-  return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; });
-}
+function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 
-/* Descargar QR / Imprimir */
+/* Descargar / Imprimir */
 function descargarQR(){
   const wrap=$('qrCanvas'); if(!wrap) return;
   const node=wrap.querySelector('canvas,img'); if(!node) return;
   const g=state.guests.find(x=>x.id===wrap.dataset.guestId); const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
-
-  if(node.tagName.toLowerCase()==='canvas'){
-    const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.toDataURL('image/png'); a.click(); return;
-  }
-  if(node.tagName.toLowerCase()==='img'){
-    try{
-      const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h;
-      const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=c.toDataURL('image/png'); a.click();
-      }; img.src=node.src;
-      return;
-    }catch(_){}
-    const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.src; a.click(); return;
-  }
+  if(node.tagName.toLowerCase()==='canvas'){ const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.toDataURL('image/png'); a.click(); return; }
+  if(node.tagName.toLowerCase()==='img'){ try{ const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h; const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ c.getContext('2d').drawImage(img,0,0,w,h); const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=c.toDataURL('image/png'); a.click(); }; img.src=node.src; return; }catch(_){} const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.src; a.click(); return; }
 }
 function imprimirQR(){
   const wrap=$('qrCanvas'); if(!wrap) return;
@@ -945,8 +938,6 @@ function imprimirQR(){
   const src=node.tagName.toLowerCase()==='canvas'?node.toDataURL('image/png'):(node.src||'');
   const w=window.open('','_blank'); w.document.write(`<img src="${src}" style="width:320px">`); w.document.close(); w.focus(); w.print();
 }
-
-/* Descargar flyer generado */
 function descargarFlyer(){
   const url = state.flyers.lastDataUrl;
   if(!url){ toast('Primero generá un flyer'); return; }
@@ -955,19 +946,13 @@ function descargarFlyer(){
   const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
   const a=document.createElement('a'); a.download=`FLYER_${name}.png`; a.href=url; a.click();
 }
-
 function verQR(guestId){ const g=state.guests.find(x=>x.id===guestId); if(!g) return; mostrarInvitacion(g); showTab('invitados'); }
-
-/* Acciones rápidas por invitado */
 async function copiarLink(guestId){
   const g = state.guests.find(x=>x.id===guestId);
   if(!g){ toast('Invitado no encontrado'); return; }
   const url = buildShareURL({id:g.id, token:g.token, eventId:g.eventId});
   try{ await navigator.clipboard.writeText(url); toast('Enlace copiado'); }
-  catch(e){
-    const ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select();
-    try{ document.execCommand('copy'); toast('Enlace copiado'); }catch(_){ toast('No se pudo copiar. Pegá manual: ' + url); } finally{ ta.remove(); }
-  }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('Enlace copiado'); }catch(_){ toast('No se pudo copiar. Pegá manual: ' + url); } finally{ ta.remove(); } }
 }
 function regenerarQR(guestId){ verQR(guestId); toast('QR regenerado'); }
 
@@ -1012,7 +997,6 @@ function renderInvitadosDeEvento(eventId){
   tbody.querySelectorAll('button[data-regen]').forEach(b=> b.onclick=()=> regenerarQR(b.dataset.regen));
 }
 function filtrarInvitadosActual(){ if(state.ui.invitadosEventoActual){ renderInvitadosDeEvento(state.ui.invitadosEventoActual); } }
-
 function renderInvitadosRecientes(){
   const cont=$('listaInvitadosRecientes'); if(!cont) return;
   const ult=state.guests.slice(-6).reverse();
@@ -1038,7 +1022,6 @@ function renderInvitadosRecientes(){
   list.querySelectorAll('button[data-copy]').forEach(b=> b.onclick=()=> copiarLink(b.dataset.copy));
   list.querySelectorAll('button[data-regen]').forEach(b=> b.onclick=()=> regenerarQR(b.dataset.regen));
 }
-
 function renderCaducadas(){
   const box=$('listaCaducadas'); if(!box) return;
   const term=($('buscarCad').value||'').toLowerCase();
@@ -1060,6 +1043,8 @@ async function reactivarInvitacion(guestId){
 
 /* ===== Escaneo ===== */
 let stream=null, barcodeReader=null, rafId=null, detector=null, torchOn=false, track=null;
+let scanningBusy=false, lastDecoded='', lastTime=0;
+
 async function toggleScanner(){
   const btn=$('scanBtn'); const hint=$('cameraHint');
   if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
@@ -1072,17 +1057,16 @@ async function toggleScanner(){
     stream=await navigator.mediaDevices.getUserMedia({
       video:{
         width, height,
-        focusMode: 'continuous',
-        facingMode: {ideal:'environment'},
-        advanced:[{zoom:1.0}]
+        facingMode:{ideal:'environment'},
+        focusMode:'continuous'
       },
       audio:false
     });
-    const video=$('video'); video.srcObject=stream; await video.play();
+    const video=$('video'); video.setAttribute('playsinline','true'); video.srcObject=stream; await video.play();
     $('scanResultado').textContent='Cámara lista. Escaneando…'; hint.textContent='';
     track = stream.getVideoTracks()[0];
 
-    // Preferir BarcodeDetector con snapshot del frame (más rápido/estable)
+    // Preferir BarcodeDetector con lectura por frames
     if('BarcodeDetector' in window){
       detector = new window.BarcodeDetector({formats:['qr_code']});
       const canvas = document.createElement('canvas');
@@ -1090,25 +1074,40 @@ async function toggleScanner(){
       const loop=async()=>{
         if(!stream) return;
         try{
-          canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-          ctx.drawImage(video,0,0,canvas.width,canvas.height);
-          const codes=await detector.detect(canvas);
-          if(codes && codes.length){ await handleScan(codes[0].rawValue); }
+          const now=performance.now();
+          if(now - lastTime > 80){ // ~12 fps
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            ctx.drawImage(video,0,0,canvas.width,canvas.height);
+            const codes=await detector.detect(canvas);
+            if(codes && codes.length){ await onDecoded(codes[0].rawValue); }
+            lastTime = now;
+          }
         }catch(_){}
         rafId=requestAnimationFrame(loop);
       }; loop();
-    } else {
-      barcodeReader = new ZXing.BrowserMultiFormatReader();
-      barcodeReader.decodeFromVideoElementContinuously(video, async (result, err)=>{
-        if(result && result.getText){ await handleScan(result.getText()); }
-      });
-      hint.textContent='Usando lector alternativo (ZXing).';
     }
+
+    // ZXing en paralelo como respaldo
+    barcodeReader = new ZXing.BrowserMultiFormatReader();
+    try{
+      barcodeReader.decodeFromVideoElementContinuously(video, async (result, err)=>{
+        if(result && result.getText){ await onDecoded(result.getText()); }
+      });
+    }catch(_){ /* ignoro */ }
+
     btn.textContent='Detener cámara';
   }catch(err){
     console.error(err);
     hint.textContent='No se pudo abrir la cámara. Permití el acceso o usa el ingreso manual.'; toast('No se pudo abrir la cámara');
   }
+}
+async function onDecoded(text){
+  if(scanningBusy) return;
+  if(!text) return;
+  if(text===lastDecoded) return;
+  scanningBusy=true; lastDecoded=text;
+  try{ await handleScan(text); } finally{ setTimeout(()=>{ scanningBusy=false; }, 1200); }
 }
 async function toggleTorch(){
   try{
@@ -1126,6 +1125,7 @@ async function stopScanner(){
   if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
   const video=$('video'); try{ video.pause(); }catch{} video.srcObject=null;
   $('scanResultado').textContent='Cámara detenida';
+  scanningBusy=false; lastDecoded='';
 }
 function setScanMsg(msg){ $('scanResultado').textContent=msg; }
 function procesarManual(){ const v=($('manualCode').value||'').trim(); if(!v) return; handleScan(v); }
@@ -1179,6 +1179,7 @@ function hideModal(){ $('modalCheckin').style.display='none'; }
 window.addEventListener('load',async()=>{
   await initCloud();
   if(!mustHaveFirebase) return;
+  initLogoEditorInputs();
 });
 </script>
 </body>
