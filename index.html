@@ -81,7 +81,16 @@ table{border-collapse:collapse;width:100%;min-width:720px}
 th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left;vertical-align:middle}
 thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .qr-box{display:grid;place-items:center;padding:12px;border-radius:16px;background:#fafafa;border:1px dashed rgba(212,175,55,.5)}
-.video{width:100%;max-height:360px;border-radius:16px;border:1px solid rgba(0,0,0,.12);background:#000}
+.video{width:100%;max-height:360px;border-radius:16px;border:1px solid rgba(0,0,0,.12);background:#000;position:relative}
+.scan-wrap{position:relative}
+.scan-overlay{
+  pointer-events:none;position:absolute;inset:0;display:grid;place-items:center;
+}
+.scan-frame{
+  width:min(70%,520px);height:min(70vw,320px);
+  border:3px solid rgba(255,255,255,.9); border-radius:14px;
+  box-shadow:0 0 0 200vw rgba(0,0,0,.35) inset;
+}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:200}
 .modal-body{background:#fff;border:var(--border);border-radius:18px;box-shadow:var(--shadow);padding:12px;max-width:780px;width:100%}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:var(--border)}
@@ -208,6 +217,20 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
     <!-- INVITADOS -->
     <div id="vista-invitados" class="hidden">
       <div class="grid two">
+
+        <!-- IDENTIDAD (LOGO) SIEMPRE VISIBLE -->
+        <div class="card">
+          <div class="card-h"><strong>Identidad (logo)</strong><span class="mini muted">Se aplica a todos los flyers</span></div>
+          <div class="card-c">
+            <div class="logo-row">
+              <img id="logoPreviewTop" class="logo-prev" alt="Logo" />
+              <input id="logoFileTop" type="file" accept="image/*" />
+              <button class="btn ghost" id="clearLogoBtnTop" type="button">Quitar logo</button>
+              <span class="help">Se guarda en tu navegador (localStorage).</span>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-h"><strong>Registrar nuevo invitado</strong></div>
           <div class="card-c">
@@ -228,6 +251,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                       <option value="oro">Oro</option>
                       <option value="plata">Plata</option>
                       <option value="noche">Noche</option>
+                      <option value="custom">Personalizado</option>
                     </select>
                     <span class="theme-dot theme-oro" title="Oro"></span>
                     <span class="theme-dot theme-plata" title="Plata"></span>
@@ -240,9 +264,9 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     <label class="mini">Texto <input type="color" id="txColorPick" value="#1f2937"></label>
                   </div>
 
-                  <!-- Logo -->
+                  <!-- Logo inline (opcional) -->
                   <div class="logo-row">
-                    <label class="mini">Logo de la empresa:</label>
+                    <label class="mini">Logo:</label>
                     <img id="logoPreview" class="logo-prev" alt="Logo" />
                     <input id="logoFile" type="file" accept="image/*" />
                     <button class="btn ghost" id="clearLogoBtn" type="button">Quitar logo</button>
@@ -255,6 +279,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     <div class="mini">Uso único. Mostrar al recepcionista.</div>
                   </div>
                   <div class="row">
+                    <button class="btn ok" id="genFlyerBtn" type="button">Generar flyer</button>
                     <button class="btn ok" id="descargarQRBtn" type="button">Descargar PNG (QR)</button>
                     <button class="btn ghost" id="imprimirQRBtn" type="button">Imprimir QR</button>
                     <button class="btn gold" id="descargarFlyerBtn" type="button">Descargar Flyer (PNG)</button>
@@ -309,8 +334,9 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
             </div>
           </div>
 
-          <div style="position:relative;margin-top:8px">
+          <div class="scan-wrap" style="position:relative;margin-top:8px">
             <video id="video" class="video" playsinline autoplay muted></video>
+            <div id="scanOverlay" class="scan-overlay"><div class="scan-frame"></div></div>
           </div>
           <div class="help" id="cameraHint" style="margin-top:6px"></div>
 
@@ -479,6 +505,7 @@ document.addEventListener('click',(e)=>{
   if(t.id==='logoutBtn') logout();
   if(t.id==='crearEventoBtn') crearEvento();
   if(t.id==='registrarInvitadoBtn') registrarInvitado();
+  if(t.id==='genFlyerBtn') genFlyerNow();
   if(t.id==='descargarQRBtn') descargarQR();
   if(t.id==='imprimirQRBtn') imprimirQR();
   if(t.id==='descargarFlyerBtn') descargarFlyer();
@@ -489,6 +516,7 @@ document.addEventListener('click',(e)=>{
   if(t.id==='modalCloseBtn'||t.id==='modalCheckin') hideModal();
   if(t.id==='torchBtn') toggleTorch();
   if(t.id==='clearLogoBtn') clearLogo();
+  if(t.id==='clearLogoBtnTop') clearLogo();
 });
 document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
@@ -500,7 +528,7 @@ document.addEventListener('input',(e)=>{
   }
   if(e.target.id==='bgColorPick'){ state.ui.bgColor=e.target.value; repaintCurrentFlyer(); }
   if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; repaintCurrentFlyer(); }
-  if(e.target.id==='logoFile'){ handleLogoUpload(e.target.files?.[0]); }
+  if(e.target.id==='logoFile' || e.target.id==='logoFileTop'){ handleLogoUpload(e.target.files?.[0]); }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
@@ -520,8 +548,9 @@ function syncUIAuth(){
     renderEventos();
     renderInvitadosRecientes();
     renderCaducadas();
-    // restaurar logo si existía
+    // restaurar logo
     updateLogoPreview();
+    updateLogoPreviewTop();
   }
   $('modeBadge').textContent = 'cloud';
 }
@@ -639,6 +668,12 @@ async function registrarInvitado(){
     toast('No se pudo crear invitación');
   }
 }
+function genFlyerNow(){
+  const gid=$('qrCanvas')?.dataset?.guestId;
+  if(!gid) return toast('Primero crea o selecciona un invitado');
+  const g=state.guests.find(x=>x.id===gid); if(!g) return;
+  pintarFlyer(g).then(()=>showModal());
+}
 
 function buildShareURL(g){
   const base = (location.origin && location.origin!=='null') ? (location.origin+location.pathname) : (location.href.split('#')[0].split('?')[0]);
@@ -720,9 +755,17 @@ function mostrarInvitacion(guest){
 /* ===== Logo (subir/quitar) ===== */
 function updateLogoPreview(){
   const prev=$('logoPreview');
-  if(!prev) return;
-  if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
-  else { prev.src=''; prev.classList.add('hidden'); }
+  if(prev){
+    if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
+    else { prev.src=''; prev.classList.add('hidden'); }
+  }
+}
+function updateLogoPreviewTop(){
+  const prev=$('logoPreviewTop');
+  if(prev){
+    if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
+    else { prev.src=''; prev.classList.add('hidden'); }
+  }
 }
 function handleLogoUpload(file){
   if(!file) return;
@@ -731,6 +774,7 @@ function handleLogoUpload(file){
     state.ui.logoDataUrl = reader.result;
     localStorage.setItem('fq_logo', state.ui.logoDataUrl);
     updateLogoPreview();
+    updateLogoPreviewTop();
     repaintCurrentFlyer();
     toast('Logo actualizado ✔️');
   };
@@ -740,6 +784,7 @@ function clearLogo(){
   state.ui.logoDataUrl=null;
   localStorage.removeItem('fq_logo');
   updateLogoPreview();
+  updateLogoPreviewTop();
   repaintCurrentFlyer();
   toast('Logo quitado');
 }
@@ -798,32 +843,23 @@ async function pintarFlyer(guest){
   ctx.font='500 26px "Poppins",sans-serif';
   ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 370);
 
-  // Franja inferior (para logo) — zona "azul"
+  // Franja inferior (logo)
   const barY = c.height - 130;
-  ctx.globalAlpha = 0.22;
-  ctx.fillStyle = (theme==='noche')?'#000':'#000';
-  ctx.fillRect(40, barY, c.width-80, 90);
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = 0.22; ctx.fillStyle = '#000'; ctx.fillRect(40, barY, c.width-80, 90); ctx.globalAlpha = 1;
 
-  // QR SIEMPRE — zona "verde"
+  // QR SIEMPRE
   const url=buildShareURL(guest);
   let qrCan = await makeLocalQRCanvas(url, 260);
-  if(!qrCan){
-    try{ qrCan = await externalQRCanvas(url, 260); }catch(_){}
-  }
+  if(!qrCan){ try{ qrCan = await externalQRCanvas(url, 260); }catch(_){ } }
   const qrX = c.width - 60 - 260;
   const qrY = 60;
-
   if(qrCan){
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,.18)';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = '#fff';
-    roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
+    ctx.shadowColor = 'rgba(0,0,0,.18)'; ctx.shadowBlur = 12;
+    ctx.fillStyle = '#fff'; roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
     ctx.restore();
     ctx.drawImage(qrCan, qrX, qrY, 260, 260);
-  } else {
-    // Último recurso: aviso
+  }else{
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,.95)';
     roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill();
@@ -833,7 +869,7 @@ async function pintarFlyer(guest){
     ctx.restore();
   }
 
-  // LOGO (desde localStorage si hay)
+  // LOGO
   if(state.ui.logoDataUrl){
     try{
       const img = await loadImage(state.ui.logoDataUrl);
@@ -845,7 +881,6 @@ async function pintarFlyer(guest){
       ctx.drawImage(img, lx, ly, w, h);
     }catch(e){ console.warn('Logo invalido', e); }
   }else{
-    // texto de marca si no hay logo subido
     ctx.save();
     ctx.fillStyle=(theme==='noche')?'#f3f4f6':'#111827';
     ctx.font='800 42px "Poppins",sans-serif';
@@ -894,7 +929,6 @@ function descargarQR(){
   }
   if(node.tagName.toLowerCase()==='img'){
     try{
-      // re-rasterizo para asegurar descarga local
       const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h;
       const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{
         c.getContext('2d').drawImage(img,0,0,w,h);
@@ -1030,7 +1064,6 @@ async function toggleScanner(){
   const btn=$('scanBtn'); const hint=$('cameraHint');
   if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
   try{
-    // resolución deseada
     const sel=$('resSel').value;
     let width={ideal:1280}, height={ideal:720};
     if(sel==='fhd'){ width={ideal:1920}; height={ideal:1080}; }
@@ -1046,13 +1079,10 @@ async function toggleScanner(){
       audio:false
     });
     const video=$('video'); video.srcObject=stream; await video.play();
-    $('scanResultado').textContent='Cámara lista. Escaneando…';
-    hint.textContent='';
-
-    // Guardar track para torch
+    $('scanResultado').textContent='Cámara lista. Escaneando…'; hint.textContent='';
     track = stream.getVideoTracks()[0];
 
-    // Preferir BarcodeDetector frame a frame
+    // Preferir BarcodeDetector con snapshot del frame (más rápido/estable)
     if('BarcodeDetector' in window){
       detector = new window.BarcodeDetector({formats:['qr_code']});
       const canvas = document.createElement('canvas');
@@ -1068,7 +1098,6 @@ async function toggleScanner(){
         rafId=requestAnimationFrame(loop);
       }; loop();
     } else {
-      // ZXing continuo
       barcodeReader = new ZXing.BrowserMultiFormatReader();
       barcodeReader.decodeFromVideoElementContinuously(video, async (result, err)=>{
         if(result && result.getText){ await handleScan(result.getText()); }
