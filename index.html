@@ -58,6 +58,8 @@ header .container{display:flex;align-items:center;justify-content:space-between}
 .btn.gold{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;box-shadow:0 4px 12px rgba(212,175,55,.25)}
 .btn.ghost{background:#fff;border:1px solid rgba(0,0,0,.08)}
 .btn.ok{background:linear-gradient(180deg,rgba(34,197,94,.2),rgba(34,197,94,.35));border:1px solid rgba(34,197,94,.45);color:#064e3b}
+/* NUEVO: botón peligro */
+.btn.danger{background:linear-gradient(180deg,rgba(239,68,68,.95),rgba(185,28,28,.98));color:#fff;box-shadow:0 4px 12px rgba(239,68,68,.25)}
 .grid{display:grid;gap:16px}
 .card{background:var(--card);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
 .card .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:var(--border)}
@@ -109,7 +111,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .logo-grid .field{min-width:0}
 .badge.succ{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
 
-/* NUEVO: Editor de fuentes (similar al de logo) */
+/* Editor de fuentes */
 .font-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}
 .font-editor.active{display:block}
 .font-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
@@ -296,7 +298,7 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     </div>
                   </div>
 
-                  <!-- NUEVO: Editor de tamaños de letra -->
+                  <!-- Editor de tamaños de letra -->
                   <div class="row" style="align-items:center;gap:8px;margin-top:4px">
                     <span class="mini">Texto:</span>
                     <button class="btn ok" id="toggleFontEditorBtn" type="button">Editar tamaño de letra</button>
@@ -464,13 +466,8 @@ const state = {
     txColor:'#1f2937',
     logoDataUrl: localStorage.getItem('fq_logo') || null,
     logo: JSON.parse(localStorage.getItem('fq_logo_cfg')||'{"x":60,"y":560,"scale":160,"visible":true}'),
-    /* NUEVO: configuración de fuentes guardada */
     fonts: JSON.parse(localStorage.getItem('fq_font_cfg') || JSON.stringify({
-      head:46,     // “ESTÁS INVITADO/A A”
-      event:72,    // título del evento
-      guest:40,    // “Invitado/a: ...”
-      token:34,    // “Token: ...”
-      note:26      // nota/instrucción
+      head:46, event:72, guest:40, token:34, note:26
     }))
   },
   flyers:{ lastDataUrl:null }
@@ -597,8 +594,11 @@ document.addEventListener('click',(e)=>{
   if(t.id==='toggleLogoEditorBtn'){ $('logoEditor').classList.toggle('active'); }
   if(t.id==='logoResetBtn') resetLogoCfg();
   if(t.id==='logoToggleBtn') toggleLogoVisible();
-  /* NUEVO: abrir/cerrar editor de fuentes */
   if(t.id==='toggleFontEditorBtn'){ $('fontEditor').classList.toggle('active'); }
+  if(t.dataset?.act==='toggle') toggleFinalizado(t.dataset.id);
+  if(t.dataset?.act==='ver') abrirBuscadorEvento(t.dataset.id);
+  /* NUEVO: eliminar evento + invitaciones */
+  if(t.dataset?.act==='del') deleteEventAndGuests(t.dataset.id);
   if(t.id==='fontResetBtn') resetFontCfg();
 });
 document.addEventListener('input',(e)=>{
@@ -610,7 +610,6 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; repaintCurrentFlyer(); }
   if(e.target.id==='logoFile' || e.target.id==='logoFileTop'){ handleLogoUpload(e.target.files?.[0]); }
   if(e.target.id==='logoScale' || e.target.id==='logoX' || e.target.id==='logoY'){ updateLogoCfgFromInputs(); }
-  /* NUEVO: sliders de fuentes */
   if(['fontHead','fontEvent','fontGuest','fontToken','fontNote'].includes(e.target.id)){ updateFontCfgFromInputs(); }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
@@ -633,7 +632,7 @@ function syncUIAuth(){
     renderCaducadas();
     updateLogoPreview(); updateLogoPreviewTop();
     initLogoEditorInputs();
-    initFontEditorInputs(); // NUEVO
+    initFontEditorInputs();
   }
   $('modeBadge').textContent = 'cloud';
 }
@@ -694,13 +693,56 @@ function renderEventos(){
         <div class="row">
           <button class="btn ghost" data-id="${ev.id}" data-act="ver">Ver invitados</button>
           <button class="btn ${ev.finalizado?'ok':'gold'}" data-id="${ev.id}" data-act="toggle">${ev.finalizado?'Reabrir':'Finalizar'}</button>
+          <button class="btn danger" data-id="${ev.id}" data-act="del" title="Eliminar evento e invitaciones">Eliminar</button>
         </div>
       </div>`;
     cont.appendChild(card);
   });
-  cont.querySelectorAll('button[data-act="ver"]').forEach(b=> b.onclick=()=>{abrirBuscadorEvento(b.dataset.id);});
-  cont.querySelectorAll('button[data-act="toggle"]').forEach(b=> b.onclick=()=> toggleFinalizado(b.dataset.id));
 }
+
+/* NUEVO: eliminar evento y todas sus invitaciones (y public_guests) */
+async function deleteEventAndGuests(eventId){
+  const ev = state.events.find(e=>e.id===eventId);
+  const nombre = ev?.nombre || 'este evento';
+  const ok = confirm(`⚠️ Vas a eliminar "${nombre}".\nSe borrarán TODAS las invitaciones asociadas y el evento.\nEsta acción no se puede deshacer.\n\n¿Confirmar?`);
+  if(!ok) return;
+
+  try{
+    // Traer invitados del evento
+    const snap = await colGuests().where('eventId','==',eventId).get();
+    const guests = snap.docs.map(d=>({id:d.id, ...d.data()}));
+
+    // Borrar invitados + public_guests en lotes (máx 450 por batch para margen)
+    for(let i=0;i<guests.length;i+=450){
+      const batch = db.batch();
+      const slice = guests.slice(i, i+450);
+      slice.forEach(g=>{
+        batch.delete(colGuests().doc(g.id));
+        try{
+          // También elimino el espejo público (si existe). Ignorar error si reglas no permiten.
+          batch.delete(colPublic().doc(`${state.uid}_${g.id}`));
+        }catch(_){/* noop */}
+      });
+      await batch.commit();
+    }
+
+    // Finalmente, borrar el evento
+    await colEvents().doc(eventId).delete();
+
+    toast('Evento e invitaciones eliminados ✔️');
+
+    // Si estabas viendo este evento, limpiar vista
+    if(state.ui.invitadosEventoActual===eventId){
+      state.ui.invitadosEventoActual=null;
+      $('zonaInvitadosEvento').innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>';
+      $('buscarEventoSel').value='';
+    }
+  }catch(e){
+    console.error(e);
+    toast('No se pudo eliminar el evento');
+  }
+}
+
 async function toggleFinalizado(id){
   const ev=state.events.find(e=>e.id===id); if(!ev) return;
   try{ await colEvents().doc(id).update({finalizado:!ev.finalizado}); toast(!ev.finalizado?'Evento finalizado':'Evento reabierto'); }
@@ -860,7 +902,6 @@ function clearLogo(){
   updateLogoPreview(); updateLogoPreviewTop();
   toast('Logo quitado');
 }
-/* Editor de logo (posición/tamaño) */
 function initLogoEditorInputs(){
   $('logoScale').value = state.ui.logo.scale;
   $('logoX').value = state.ui.logo.x;
@@ -884,18 +925,14 @@ function toggleLogoVisible(){
   repaintCurrentFlyer();
 }
 
-/* ===== NUEVO: Editor de fuentes ===== */
+/* ===== Editor de fuentes ===== */
 function initFontEditorInputs(){
   $('fontHead').value = state.ui.fonts.head;
   $('fontEvent').value = state.ui.fonts.event;
   $('fontGuest').value = state.ui.fonts.guest;
   $('fontToken').value = state.ui.fonts.token;
   $('fontNote').value = state.ui.fonts.note;
-  $('fontHeadVal').textContent = state.ui.fonts.head + ' px';
-  $('fontEventVal').textContent = state.ui.fonts.event + ' px';
-  $('fontGuestVal').textContent = state.ui.fonts.guest + ' px';
-  $('fontTokenVal').textContent = state.ui.fonts.token + ' px';
-  $('fontNoteVal').textContent = state.ui.fonts.note + ' px';
+  initFontValueLabels();
 }
 function updateFontCfgFromInputs(){
   state.ui.fonts.head  = parseInt($('fontHead').value||46,10);
@@ -920,18 +957,17 @@ function resetFontCfg(){
   initFontEditorInputs(); repaintCurrentFlyer();
 }
 
-/* ===== Flyer (sin franja gris) ===== */
+/* ===== Flyer ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
   const bgPick = state.ui.bgColor;
   const txPick = state.ui.txColor;
-  const F = state.ui.fonts; // accesos rápidos
+  const F = state.ui.fonts;
 
   const c=document.createElement('canvas'); c.width=1200; c.height=675;
   const ctx=c.getContext('2d');
 
-  // Fondo
   if(theme==='oro'){
     const g=ctx.createLinearGradient(0,0,0,c.height);
     g.addColorStop(0,'#fff7d1'); g.addColorStop(.55,'#f5d777'); g.addColorStop(1,'#d4af37');
@@ -951,31 +987,24 @@ async function pintarFlyer(guest){
     ctx.fillStyle = bgPick || '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
   }
 
-  // Color de texto
   ctx.fillStyle = (theme==='noche') ? '#f3f4f6' : (txPick || '#1f2937');
 
-  // Encabezado
   ctx.font=`800 ${F.head}px "Poppins",sans-serif`;
-  ctx.fillText('ESTÁS INVITADO/A A', 60, 80 + F.head); // mantener espacio proporcional
+  ctx.fillText('ESTÁS INVITADO/A A', 60, 80 + F.head);
 
-  // Título del evento
   ctx.font=`900 ${F.event}px "Poppins",sans-serif`;
   const evName = ev ? ev.nombre : '';
   wrapText(ctx, evName, 60, 150 + F.head, 680, F.event);
 
-  // Invitado
   ctx.font=`700 ${F.guest}px "Poppins",sans-serif`;
   wrapText(ctx, `Invitado/a: ${guest.nombre}`, 60, 170 + F.head + F.event, 680, F.guest);
 
-  // Token
   ctx.font=`600 ${F.token}px "Poppins",sans-serif`;
   ctx.fillText(`Token: ${guest.token}`, 60, 200 + F.head + F.event + F.guest);
 
-  // Nota
   ctx.font=`500 ${F.note}px "Poppins",sans-serif`;
   ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 230 + F.head + F.event + F.guest);
 
-  // QR
   const url=buildShareURL(guest);
   let qrCan = await makeLocalQRCanvas(url, 260);
   if(!qrCan){ try{ qrCan = await externalQRCanvas(url, 260); }catch(_){ } }
@@ -989,11 +1018,10 @@ async function pintarFlyer(guest){
     ctx.fillStyle='#9CA3AF'; ctx.font='800 28px "Poppins",sans-serif'; wrapText(ctx,'QR no disponible', qrX+40, qrY+120, 200, 28, 34); ctx.restore();
   }
 
-  // LOGO grande configurable
   if(state.ui.logoDataUrl && state.ui.logo.visible){
     try{
       const img = await loadImage(state.ui.logoDataUrl);
-      const baseW = 360; // base para escala 100
+      const baseW = 360;
       const scale = (state.ui.logo.scale||160)/100;
       const w = Math.max(40, Math.round(baseW*scale));
       const ratio = (img.naturalWidth||img.width) / (img.naturalHeight||img.height);
@@ -1173,7 +1201,6 @@ async function toggleScanner(){
     $('scanResultado').textContent='Cámara lista. Escaneando…'; hint.textContent='';
     track = stream.getVideoTracks()[0];
 
-    // Preferir BarcodeDetector con lectura por frames
     if('BarcodeDetector' in window){
       detector = new window.BarcodeDetector({formats:['qr_code']});
       const canvas = document.createElement('canvas');
@@ -1182,7 +1209,7 @@ async function toggleScanner(){
         if(!stream) return;
         try{
           const now=performance.now();
-          if(now - lastTime > 80){ // ~12 fps
+          if(now - lastTime > 80){
             canvas.width = video.videoWidth || 640;
             canvas.height = video.videoHeight || 480;
             ctx.drawImage(video,0,0,canvas.width,canvas.height);
@@ -1195,13 +1222,12 @@ async function toggleScanner(){
       }; loop();
     }
 
-    // ZXing en paralelo como respaldo
     barcodeReader = new ZXing.BrowserMultiFormatReader();
     try{
       barcodeReader.decodeFromVideoElementContinuously(video, async (result, err)=>{
         if(result && result.getText){ await onDecoded(result.getText()); }
       });
-    }catch(_){ /* ignoro */ }
+    }catch(_){}
 
     btn.textContent='Detener cámara';
   }catch(err){
@@ -1287,7 +1313,7 @@ window.addEventListener('load',async()=>{
   await initCloud();
   if(!mustHaveFirebase) return;
   initLogoEditorInputs();
-  initFontEditorInputs(); // NUEVO
+  initFontEditorInputs();
 });
 </script>
 </body>
