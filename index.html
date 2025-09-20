@@ -108,6 +108,12 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .logo-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
 .logo-grid .field{min-width:0}
 .badge.succ{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
+
+/* NUEVO: Editor de fuentes (similar al de logo) */
+.font-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}
+.font-editor.active{display:block}
+.font-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
+.font-grid .field{min-width:0}
 </style>
 </head>
 <body>
@@ -290,6 +296,48 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     </div>
                   </div>
 
+                  <!-- NUEVO: Editor de tamaños de letra -->
+                  <div class="row" style="align-items:center;gap:8px;margin-top:4px">
+                    <span class="mini">Texto:</span>
+                    <button class="btn ok" id="toggleFontEditorBtn" type="button">Editar tamaño de letra</button>
+                  </div>
+                  <div id="fontEditor" class="font-editor">
+                    <div class="font-grid">
+                      <div class="field">
+                        <label>Encabezado (“Estás invitado/a a”)</label>
+                        <input id="fontHead" type="range" min="20" max="80" step="1">
+                        <span class="mini muted" id="fontHeadVal"></span>
+                      </div>
+                      <div class="field">
+                        <label>Título del evento</label>
+                        <input id="fontEvent" type="range" min="36" max="120" step="1">
+                        <span class="mini muted" id="fontEventVal"></span>
+                      </div>
+                      <div class="field">
+                        <label>Nombre del invitado</label>
+                        <input id="fontGuest" type="range" min="24" max="80" step="1">
+                        <span class="mini muted" id="fontGuestVal"></span>
+                      </div>
+                      <div class="field">
+                        <label>Token</label>
+                        <input id="fontToken" type="range" min="20" max="64" step="1">
+                        <span class="mini muted" id="fontTokenVal"></span>
+                      </div>
+                      <div class="field">
+                        <label>Nota / Instrucción</label>
+                        <input id="fontNote" type="range" min="16" max="40" step="1">
+                        <span class="mini muted" id="fontNoteVal"></span>
+                      </div>
+                      <div class="field">
+                        <label>&nbsp;</label>
+                        <div class="row">
+                          <button class="btn ghost" id="fontResetBtn" type="button">Reset texto</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- /Editor de tamaños de letra -->
+
                   <div>
                     <strong id="qrNombre"></strong>
                     <div class="mini">Evento: <span id="qrEvento"></span></div>
@@ -415,7 +463,15 @@ const state = {
     bgColor:'#ffffff',
     txColor:'#1f2937',
     logoDataUrl: localStorage.getItem('fq_logo') || null,
-    logo: JSON.parse(localStorage.getItem('fq_logo_cfg')||'{"x":60,"y":560,"scale":160,"visible":true}')
+    logo: JSON.parse(localStorage.getItem('fq_logo_cfg')||'{"x":60,"y":560,"scale":160,"visible":true}'),
+    /* NUEVO: configuración de fuentes guardada */
+    fonts: JSON.parse(localStorage.getItem('fq_font_cfg') || JSON.stringify({
+      head:46,     // “ESTÁS INVITADO/A A”
+      event:72,    // título del evento
+      guest:40,    // “Invitado/a: ...”
+      token:34,    // “Token: ...”
+      note:26      // nota/instrucción
+    }))
   },
   flyers:{ lastDataUrl:null }
 };
@@ -425,7 +481,6 @@ const mustHaveFirebase = !!(firebaseConfig && firebaseConfig.apiKey);
 /* ===== Utils ===== */
 const $ = (id)=>document.getElementById(id);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
-// ✅ FIX: función correcta
 function escapeHtml(s){
   return (s||'').replace(/[&<>"']/g,c=>({
     "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
@@ -542,6 +597,9 @@ document.addEventListener('click',(e)=>{
   if(t.id==='toggleLogoEditorBtn'){ $('logoEditor').classList.toggle('active'); }
   if(t.id==='logoResetBtn') resetLogoCfg();
   if(t.id==='logoToggleBtn') toggleLogoVisible();
+  /* NUEVO: abrir/cerrar editor de fuentes */
+  if(t.id==='toggleFontEditorBtn'){ $('fontEditor').classList.toggle('active'); }
+  if(t.id==='fontResetBtn') resetFontCfg();
 });
 document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
@@ -552,6 +610,8 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; repaintCurrentFlyer(); }
   if(e.target.id==='logoFile' || e.target.id==='logoFileTop'){ handleLogoUpload(e.target.files?.[0]); }
   if(e.target.id==='logoScale' || e.target.id==='logoX' || e.target.id==='logoY'){ updateLogoCfgFromInputs(); }
+  /* NUEVO: sliders de fuentes */
+  if(['fontHead','fontEvent','fontGuest','fontToken','fontNote'].includes(e.target.id)){ updateFontCfgFromInputs(); }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
@@ -573,6 +633,7 @@ function syncUIAuth(){
     renderCaducadas();
     updateLogoPreview(); updateLogoPreviewTop();
     initLogoEditorInputs();
+    initFontEditorInputs(); // NUEVO
   }
   $('modeBadge').textContent = 'cloud';
 }
@@ -823,12 +884,49 @@ function toggleLogoVisible(){
   repaintCurrentFlyer();
 }
 
+/* ===== NUEVO: Editor de fuentes ===== */
+function initFontEditorInputs(){
+  $('fontHead').value = state.ui.fonts.head;
+  $('fontEvent').value = state.ui.fonts.event;
+  $('fontGuest').value = state.ui.fonts.guest;
+  $('fontToken').value = state.ui.fonts.token;
+  $('fontNote').value = state.ui.fonts.note;
+  $('fontHeadVal').textContent = state.ui.fonts.head + ' px';
+  $('fontEventVal').textContent = state.ui.fonts.event + ' px';
+  $('fontGuestVal').textContent = state.ui.fonts.guest + ' px';
+  $('fontTokenVal').textContent = state.ui.fonts.token + ' px';
+  $('fontNoteVal').textContent = state.ui.fonts.note + ' px';
+}
+function updateFontCfgFromInputs(){
+  state.ui.fonts.head  = parseInt($('fontHead').value||46,10);
+  state.ui.fonts.event = parseInt($('fontEvent').value||72,10);
+  state.ui.fonts.guest = parseInt($('fontGuest').value||40,10);
+  state.ui.fonts.token = parseInt($('fontToken').value||34,10);
+  state.ui.fonts.note  = parseInt($('fontNote').value||26,10);
+  localStorage.setItem('fq_font_cfg', JSON.stringify(state.ui.fonts));
+  initFontValueLabels();
+  repaintCurrentFlyer();
+}
+function initFontValueLabels(){
+  $('fontHeadVal').textContent = state.ui.fonts.head + ' px';
+  $('fontEventVal').textContent = state.ui.fonts.event + ' px';
+  $('fontGuestVal').textContent = state.ui.fonts.guest + ' px';
+  $('fontTokenVal').textContent = state.ui.fonts.token + ' px';
+  $('fontNoteVal').textContent = state.ui.fonts.note + ' px';
+}
+function resetFontCfg(){
+  state.ui.fonts = { head:46, event:72, guest:40, token:34, note:26 };
+  localStorage.setItem('fq_font_cfg', JSON.stringify(state.ui.fonts));
+  initFontEditorInputs(); repaintCurrentFlyer();
+}
+
 /* ===== Flyer (sin franja gris) ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
   const bgPick = state.ui.bgColor;
   const txPick = state.ui.txColor;
+  const F = state.ui.fonts; // accesos rápidos
 
   const c=document.createElement('canvas'); c.width=1200; c.height=675;
   const ctx=c.getContext('2d');
@@ -853,26 +951,31 @@ async function pintarFlyer(guest){
     ctx.fillStyle = bgPick || '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
   }
 
-  // Texto
+  // Color de texto
   ctx.fillStyle = (theme==='noche') ? '#f3f4f6' : (txPick || '#1f2937');
 
-  ctx.font='800 46px "Poppins",sans-serif';
-  ctx.fillText('ESTÁS INVITADO/A A', 60, 110);
+  // Encabezado
+  ctx.font=`800 ${F.head}px "Poppins",sans-serif`;
+  ctx.fillText('ESTÁS INVITADO/A A', 60, 80 + F.head); // mantener espacio proporcional
 
-  ctx.font='900 72px "Poppins",sans-serif';
+  // Título del evento
+  ctx.font=`900 ${F.event}px "Poppins",sans-serif`;
   const evName = ev ? ev.nombre : '';
-  wrapText(ctx, evName, 60, 190, 680, 72);
+  wrapText(ctx, evName, 60, 150 + F.head, 680, F.event);
 
-  ctx.font='700 40px "Poppins",sans-serif';
-  wrapText(ctx, `Invitado/a: ${guest.nombre}`, 60, 260, 680, 40);
+  // Invitado
+  ctx.font=`700 ${F.guest}px "Poppins",sans-serif`;
+  wrapText(ctx, `Invitado/a: ${guest.nombre}`, 60, 170 + F.head + F.event, 680, F.guest);
 
-  ctx.font='600 34px "Poppins",sans-serif';
-  ctx.fillText(`Token: ${guest.token}`, 60, 310);
+  // Token
+  ctx.font=`600 ${F.token}px "Poppins",sans-serif`;
+  ctx.fillText(`Token: ${guest.token}`, 60, 200 + F.head + F.event + F.guest);
 
-  ctx.font='500 26px "Poppins",sans-serif';
-  ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 370);
+  // Nota
+  ctx.font=`500 ${F.note}px "Poppins",sans-serif`;
+  ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 230 + F.head + F.event + F.guest);
 
-  // QR (siempre)
+  // QR
   const url=buildShareURL(guest);
   let qrCan = await makeLocalQRCanvas(url, 260);
   if(!qrCan){ try{ qrCan = await externalQRCanvas(url, 260); }catch(_){ } }
@@ -1184,6 +1287,7 @@ window.addEventListener('load',async()=>{
   await initCloud();
   if(!mustHaveFirebase) return;
   initLogoEditorInputs();
+  initFontEditorInputs(); // NUEVO
 });
 </script>
 </body>
