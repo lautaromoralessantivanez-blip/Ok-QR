@@ -58,7 +58,6 @@ header .container{display:flex;align-items:center;justify-content:space-between}
 .btn.gold{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;box-shadow:0 4px 12px rgba(212,175,55,.25)}
 .btn.ghost{background:#fff;border:1px solid rgba(0,0,0,.08)}
 .btn.ok{background:linear-gradient(180deg,rgba(34,197,94,.2),rgba(34,197,94,.35));border:1px solid rgba(34,197,94,.45);color:#064e3b}
-/* NUEVO: botón peligro */
 .btn.danger{background:linear-gradient(180deg,rgba(239,68,68,.95),rgba(185,28,28,.98));color:#fff;box-shadow:0 4px 12px rgba(239,68,68,.25)}
 .grid{display:grid;gap:16px}
 .card{background:var(--card);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
@@ -110,8 +109,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .logo-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
 .logo-grid .field{min-width:0}
 .badge.succ{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
-
-/* Editor de fuentes */
 .font-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}
 .font-editor.active{display:block}
 .font-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
@@ -240,7 +237,23 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
           <div class="card-c">
             <div class="row">
               <div class="field" style="flex:1 1 250px"><label for="invNombre">Nombre y apellido</label><input id="invNombre" placeholder="Ej: Ana Pérez" /></div>
-              <div class="field" style="width:260px"><label for="invEvento">Evento</label><select id="invEvento"></select></div>
+              <div class="field" style="width:220px"><label for="invEvento">Evento</label><select id="invEvento"></select></div>
+
+              <!-- NUEVO: Tipo de persona -->
+              <div class="field" style="width:220px">
+                <label for="invTipo">Tipo</label>
+                <select id="invTipo">
+                  <option value="egresado">Egresado</option>
+                  <option value="invitado">Invitado (acompañante)</option>
+                </select>
+              </div>
+
+              <!-- NUEVO: Selección de Egresado (visible solo si Tipo = invitado) -->
+              <div class="field" id="wrapInvEgresado" style="width:260px;display:none">
+                <label for="invEgresadoSel">Asignar a egresado</label>
+                <select id="invEgresadoSel"><option value="">Elegí egresado…</option></select>
+              </div>
+
               <div class="field" style="width:220px"><label>&nbsp;</label><button class="btn gold" id="registrarInvitadoBtn" type="button">Crear invitación + QR</button></div>
             </div>
 
@@ -264,7 +277,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     <label class="mini">Texto <input type="color" id="txColorPick" value="#1f2937"></label>
                   </div>
 
-                  <!-- Logo inline -->
                   <div class="logo-row">
                     <label class="mini">Logo:</label>
                     <img id="logoPreview" class="logo-prev" alt="Logo" />
@@ -273,7 +285,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     <button class="btn ok" id="toggleLogoEditorBtn" type="button">Editar logo</button>
                   </div>
 
-                  <!-- Editor de logo -->
                   <div id="logoEditor" class="logo-editor">
                     <div class="logo-grid">
                       <div class="field">
@@ -298,7 +309,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                     </div>
                   </div>
 
-                  <!-- Editor de tamaños de letra -->
                   <div class="row" style="align-items:center;gap:8px;margin-top:4px">
                     <span class="mini">Texto:</span>
                     <button class="btn ok" id="toggleFontEditorBtn" type="button">Editar tamaño de letra</button>
@@ -338,7 +348,6 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
                       </div>
                     </div>
                   </div>
-                  <!-- /Editor de tamaños de letra -->
 
                   <div>
                     <strong id="qrNombre"></strong>
@@ -362,6 +371,14 @@ thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
         <div class="card">
           <div class="card-h"><strong>Invitados recientes</strong></div>
           <div class="card-c"><div id="listaInvitadosRecientes"></div></div>
+        </div>
+      </div>
+
+      <!-- NUEVO: Panel de Egresados -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-h"><strong>Egresados y acompañantes</strong><span class="mini muted">Toca un egresado para ver sus invitados</span></div>
+        <div class="card-c" id="egresadosPanel">
+          <!-- Se renderiza por JS -->
         </div>
       </div>
     </div>
@@ -479,9 +496,7 @@ const mustHaveFirebase = !!(firebaseConfig && firebaseConfig.apiKey);
 const $ = (id)=>document.getElementById(id);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);}
 function escapeHtml(s){
-  return (s||'').replace(/[&<>"']/g,c=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"
-  }[c]));
+  return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 }
 function newToken(){return Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Date.now().toString(36).slice(-4).toUpperCase();}
 
@@ -597,9 +612,11 @@ document.addEventListener('click',(e)=>{
   if(t.id==='toggleFontEditorBtn'){ $('fontEditor').classList.toggle('active'); }
   if(t.dataset?.act==='toggle') toggleFinalizado(t.dataset.id);
   if(t.dataset?.act==='ver') abrirBuscadorEvento(t.dataset.id);
-  /* NUEVO: eliminar evento + invitaciones */
   if(t.dataset?.act==='del') deleteEventAndGuests(t.dataset.id);
   if(t.id==='fontResetBtn') resetFontCfg();
+
+  /* NUEVO: expandir/cerrar egresado para ver invitados */
+  if(t.matches('[data-egresado]')) toggleVerInvitadosDeEgresado(t.getAttribute('data-egresado'));
 });
 document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarInvitadosInput') filtrarInvitadosActual();
@@ -611,6 +628,10 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='logoFile' || e.target.id==='logoFileTop'){ handleLogoUpload(e.target.files?.[0]); }
   if(e.target.id==='logoScale' || e.target.id==='logoX' || e.target.id==='logoY'){ updateLogoCfgFromInputs(); }
   if(['fontHead','fontEvent','fontGuest','fontToken','fontNote'].includes(e.target.id)){ updateFontCfgFromInputs(); }
+
+  /* NUEVO: mostrar/ocultar selector de egresado + refrescar lista */
+  if(e.target.id==='invTipo'){ updateEgresadoSelectorVisibility(); }
+  if(e.target.id==='invEvento'){ populateEgresadosForSelectedEvent(); }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
@@ -630,6 +651,7 @@ function syncUIAuth(){
     renderEventos();
     renderInvitadosRecientes();
     renderCaducadas();
+    renderPanelEgresados(); // NUEVO
     updateLogoPreview(); updateLogoPreviewTop();
     initLogoEditorInputs();
     initFontEditorInputs();
@@ -645,11 +667,14 @@ async function cloudSubscribe(){
     state.events=snap.docs.map(d=>({id:d.id,...d.data()}));
     refrescarCombos(); renderEventos(); renderInvitadosRecientes();
     if(state.ui.invitadosEventoActual){renderInvitadosDeEvento(state.ui.invitadosEventoActual);}
+    renderPanelEgresados(); // NUEVO
   },console.error);
   unsubGuests=colGuests().onSnapshot(snap=>{
     state.guests=snap.docs.map(d=>({id:d.id,...d.data()}));
     renderInvitadosRecientes(); renderCaducadas();
     if(state.ui.invitadosEventoActual){renderInvitadosDeEvento(state.ui.invitadosEventoActual);}
+    populateEgresadosForSelectedEvent(); // NUEVO
+    renderPanelEgresados(); // NUEVO
   },console.error);
 }
 
@@ -700,7 +725,7 @@ function renderEventos(){
   });
 }
 
-/* NUEVO: eliminar evento y todas sus invitaciones (y public_guests) */
+/* Eliminar evento e invitaciones (existente) */
 async function deleteEventAndGuests(eventId){
   const ev = state.events.find(e=>e.id===eventId);
   const nombre = ev?.nombre || 'este evento';
@@ -708,30 +733,23 @@ async function deleteEventAndGuests(eventId){
   if(!ok) return;
 
   try{
-    // Traer invitados del evento
     const snap = await colGuests().where('eventId','==',eventId).get();
     const guests = snap.docs.map(d=>({id:d.id, ...d.data()}));
 
-    // Borrar invitados + public_guests en lotes (máx 450 por batch para margen)
     for(let i=0;i<guests.length;i+=450){
       const batch = db.batch();
       const slice = guests.slice(i, i+450);
       slice.forEach(g=>{
         batch.delete(colGuests().doc(g.id));
-        try{
-          // También elimino el espejo público (si existe). Ignorar error si reglas no permiten.
-          batch.delete(colPublic().doc(`${state.uid}_${g.id}`));
-        }catch(_){/* noop */}
+        try{ batch.delete(colPublic().doc(`${state.uid}_${g.id}`)); }catch(_){}
       });
       await batch.commit();
     }
 
-    // Finalmente, borrar el evento
     await colEvents().doc(eventId).delete();
 
     toast('Evento e invitaciones eliminados ✔️');
 
-    // Si estabas viendo este evento, limpiar vista
     if(state.ui.invitadosEventoActual===eventId){
       state.ui.invitadosEventoActual=null;
       $('zonaInvitadosEvento').innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>';
@@ -754,17 +772,55 @@ function refrescarCombos(){
   $('invEvento').innerHTML = `<option value="">Elegí un evento…</option>${opts}`;
   $('buscarEventoSel').innerHTML = `<option value="">Seleccioná…</option>${opts}`;
   $('scanEvento').innerHTML = `<option value="">(Cualquiera)</option>${opts}`;
+  populateEgresadosForSelectedEvent(); // NUEVO
 }
 
 /* ===== Invitados + QR ===== */
+
+/* NUEVO: mostrar/ocultar selector de egresado según tipo */
+function updateEgresadoSelectorVisibility(){
+  const tipo = $('invTipo').value;
+  const wrap = $('wrapInvEgresado');
+  wrap.style.display = (tipo === 'invitado') ? 'block' : 'none';
+}
+
+/* NUEVO: llenar lista de egresados del evento seleccionado */
+function populateEgresadosForSelectedEvent(){
+  const eventId = $('invEvento').value;
+  const sel = $('invEgresadoSel');
+  if(!sel) return;
+  if(!eventId){
+    sel.innerHTML = '<option value="">Elegí egresado…</option>';
+    updateEgresadoSelectorVisibility();
+    return;
+  }
+  const egresados = state.guests.filter(g => g.eventId===eventId && g.tipo==='egresado');
+  let html = '<option value="">Elegí egresado…</option>';
+  egresados.forEach(e => { html += `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`; });
+  sel.innerHTML = html;
+  updateEgresadoSelectorVisibility();
+}
+
 async function registrarInvitado(){
   const nombre=($('invNombre').value||'').trim();
   const eventId=$('invEvento').value;
-  if(!nombre) return toast('Escribí el nombre del invitado');
+  const tipo = ($('invTipo').value||'egresado'); // NUEVO
+  const parentGradId = ($('invEgresadoSel')?.value||''); // NUEVO
+  if(!nombre) return toast('Escribí el nombre');
   if(!eventId) return toast('Elegí el evento');
 
+  if(tipo==='invitado'){
+    if(!parentGradId) return toast('Elegí el egresado a asignar');
+    const egExists = state.guests.some(g=>g.id===parentGradId && g.tipo==='egresado');
+    if(!egExists) return toast('Egresado inválido para este evento');
+  }
+
   let token; do{ token=newToken(); } while(state.guests.some(g=>g.token===token));
-  const guest={nombre,eventId,token,used:false,usedAt:null};
+  const guest={
+    nombre,eventId,token,used:false,usedAt:null,
+    tipo, // NUEVO
+    parentGradId: (tipo==='invitado'? parentGradId : null) // NUEVO
+  };
 
   try{
     const docRef=await colGuests().add(guest);
@@ -773,7 +829,7 @@ async function registrarInvitado(){
     $('invNombre').value='';
 
     mostrarInvitacion({id:gid,...guest});
-    toast('Invitación creada ✔️');
+    toast(`${tipo==='egresado'?'Egresado':'Invitado'} creado ✔️`);
 
     (async()=>{
       try{
@@ -787,11 +843,16 @@ async function registrarInvitado(){
         toast('Aviso: validación por enlace deshabilitada (reglas/HTTPS). El QR igual funciona.');
       }
     })();
+
+    // refrescar panel
+    renderPanelEgresados();
+
   }catch(e){
     console.error(e);
-    toast('No se pudo crear invitación');
+    toast('No se pudo crear la invitación');
   }
 }
+
 function genFlyerNow(){
   const gid=$('qrCanvas')?.dataset?.guestId;
   if(!gid) return toast('Primero crea o selecciona un invitado');
@@ -804,7 +865,7 @@ function buildShareURL(g){
   return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`;
 }
 
-/* ======== QR GENERATION ======== */
+/* ======== QR GENERATION (existente) ======== */
 async function makeQR(el, text, size = 240){
   el.innerHTML = '';
   try {
@@ -874,7 +935,7 @@ function mostrarInvitacion(guest){
   pintarFlyer(guest);
 }
 
-/* ===== Logo ===== */
+/* ===== Logo / Fuentes (existente) ===== */
 function updateLogoPreview(){
   const prev=$('logoPreview');
   if(prev){ if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); } else { prev.src=''; prev.classList.add('hidden'); } }
@@ -957,7 +1018,7 @@ function resetFontCfg(){
   initFontEditorInputs(); repaintCurrentFlyer();
 }
 
-/* ===== Flyer ===== */
+/* ===== Flyer (existente) ===== */
 async function pintarFlyer(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const theme = state.ui.flyerTheme || 'oro';
@@ -1060,7 +1121,7 @@ function roundRect(ctx, x, y, w, h, r){
 }
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 
-/* Descargar / Imprimir */
+/* Descargar / Imprimir (existente) */
 function descargarQR(){
   const wrap=$('qrCanvas'); if(!wrap) return;
   const node=wrap.querySelector('canvas,img'); if(!node) return;
@@ -1092,7 +1153,7 @@ async function copiarLink(guestId){
 }
 function regenerarQR(guestId){ verQR(guestId); toast('QR regenerado'); }
 
-/* ===== Listados ===== */
+/* ===== Listados por evento (existente) ===== */
 function renderInvitadosDeEvento(eventId){
   state.ui.invitadosEventoActual=eventId;
   const zona=$('zonaInvitadosEvento');
@@ -1108,7 +1169,7 @@ function renderInvitadosDeEvento(eventId){
     <div style="overflow:auto">
       <table class="table">
         <thead>
-          <tr><th>Nombre</th><th>Token</th><th>Estado</th><th>Acciones</th></tr>
+          <tr><th>Nombre</th><th>Token</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody id="tbodyInvEvt"></tbody>
       </table>
@@ -1119,6 +1180,7 @@ function renderInvitadosDeEvento(eventId){
     tr.innerHTML=`
       <td>${escapeHtml(g.nombre)}</td>
       <td class="muted">${g.token}</td>
+      <td>${g.tipo?escapeHtml(g.tipo):'—'}</td>
       <td>${g.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}</td>
       <td class="actions">
         <button class="btn ghost" data-showqr="${g.id}">Ver QR</button>
@@ -1144,7 +1206,7 @@ function renderInvitadosRecientes(){
     div.innerHTML = `
       <div>
         <div style="font-weight:700">${escapeHtml(g.nombre)}</div>
-        <div class="muted">Evento: ${ev?escapeHtml(ev.nombre):'—'} · Token: ${g.token}</div>
+        <div class="muted">Evento: ${ev?escapeHtml(ev.nombre):'—'} · Token: ${g.token} · ${g.tipo?('Tipo: '+escapeHtml(g.tipo)):'Tipo: —'}</div>
       </div>
       <div class="actions">
         <button class="btn ghost" data-verqr="${g.id}">Ver QR</button>
@@ -1177,7 +1239,87 @@ async function reactivarInvitacion(guestId){
   catch(e){ console.error(e); toast('Error al reactivar'); }
 }
 
-/* ===== Escaneo ===== */
+/* ===== Panel de Egresados (NUEVO) ===== */
+function renderPanelEgresados(){
+  const panel = $('egresadosPanel');
+  if(!panel) return;
+
+  // agrupar egresados por evento
+  const egresados = state.guests.filter(g => g.tipo==='egresado');
+  if(egresados.length===0){
+    panel.innerHTML = '<div class="muted">Aún no hay egresados. Creá uno desde “Registrar nuevo invitado” eligiendo Tipo “Egresado”.</div>';
+    return;
+  }
+  const byEvent = {};
+  egresados.forEach(e=>{
+    if(!byEvent[e.eventId]) byEvent[e.eventId]=[];
+    byEvent[e.eventId].push(e);
+  });
+
+  let html='';
+  Object.entries(byEvent).forEach(([eventId, lista])=>{
+    const ev = state.events.find(e=>e.id===eventId);
+    html += `<div style="margin-bottom:12px">
+      <div style="font-weight:800;margin:4px 0">${ev?escapeHtml(ev.nombre):'Evento'}</div>
+      <div class="list" id="eg_list_${eventId}">`;
+    lista.sort((a,b)=>a.nombre.localeCompare(b.nombre,'es')).forEach(egr=>{
+      const count = state.guests.filter(x=>x.parentGradId===egr.id).length;
+      html += `
+        <div class="event-card">
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:700">${escapeHtml(egr.nombre)} <span class="pill">Egresado</span></div>
+              <div class="mini muted">Acompañantes: ${count}</div>
+            </div>
+            <div class="row">
+              <button class="btn ghost" data-egresado="${egr.id}">Ver invitados (${count})</button>
+              <button class="btn ghost" onclick="verQR('${egr.id}')">Ver QR</button>
+            </div>
+          </div>
+          <div id="eg_${egr.id}_inv" class="hidden" style="margin-top:10px"></div>
+        </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  panel.innerHTML = html;
+}
+
+/* NUEVO: alternar vista de invitados de un egresado */
+function toggleVerInvitadosDeEgresado(egresadoId){
+  const box = document.getElementById(`eg_${egresadoId}_inv`);
+  if(!box) return;
+  const visible = !box.classList.contains('hidden');
+  if(visible){ box.classList.add('hidden'); box.innerHTML=''; return; }
+
+  const hijos = state.guests.filter(g=>g.parentGradId===egresadoId);
+  if(hijos.length===0){
+    box.innerHTML = '<div class="muted">Sin invitados asignados.</div>';
+    box.classList.remove('hidden');
+    return;
+  }
+  let html = `<div style="overflow:auto">
+    <table class="table">
+      <thead><tr><th>Invitado</th><th>Token</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>`;
+  hijos.forEach(h=>{
+    html += `<tr>
+      <td>${escapeHtml(h.nombre)}</td>
+      <td class="muted">${h.token}</td>
+      <td>${h.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}</td>
+      <td class="actions">
+        <button class="btn ghost" onclick="verQR('${h.id}')">Ver QR</button>
+        <button class="btn ghost" onclick="copiarLink('${h.id}')">Copiar link</button>
+        <button class="btn ok" onclick="regenerarQR('${h.id}')">Re-generar</button>
+      </td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  box.innerHTML = html;
+  box.classList.remove('hidden');
+}
+
+/* ===== Escaneo (existente) ===== */
 let stream=null, barcodeReader=null, rafId=null, detector=null, torchOn=false, track=null;
 let scanningBusy=false, lastDecoded='', lastTime=0;
 
@@ -1191,10 +1333,7 @@ async function toggleScanner(){
     if(sel==='auto'){ width={ideal:1280}; height={ideal:720}; }
 
     stream=await navigator.mediaDevices.getUserMedia({
-      video:{
-        width, height,
-        facingMode:{ideal:'environment'}
-      },
+      video:{ width, height, facingMode:{ideal:'environment'} },
       audio:false
     });
     const video=$('video'); video.setAttribute('playsinline','true'); video.srcObject=stream; await video.play();
@@ -1303,7 +1442,7 @@ async function marcarUsadoYMostrar(guest){
   showModal();
   const ev=state.events.find(e=>e.id===guest.eventId);
   setScanMsg(`✅ Invitado: ${guest.nombre} — Evento: ${ev?ev.nombre:''}`);
-  renderCaducadas(); filtrarInvitadosActual(); renderInvitadosRecientes();
+  renderCaducadas(); filtrarInvitadosActual(); renderInvitadosRecientes(); renderPanelEgresados();
 }
 function showModal(){ $('modalCheckin').style.display='flex'; }
 function hideModal(){ $('modalCheckin').style.display='none'; }
@@ -1314,6 +1453,7 @@ window.addEventListener('load',async()=>{
   if(!mustHaveFirebase) return;
   initLogoEditorInputs();
   initFontEditorInputs();
+  updateEgresadoSelectorVisibility(); // NUEVO
 });
 </script>
 </body>
