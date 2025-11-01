@@ -36,49 +36,98 @@
 </script>
 
 <style>
-:root{--bg:#F5F4F0;--panel:#FAF9F6;--card:#FFFFFF;--text:#1f2937;--muted:#6B7280;--gold:#d4af37;--ok:#22c55e;--danger:#ef4444;--radius:16px;--shadow:0 8px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.05);--border:1px solid rgba(0,0,0,.08)}
-*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:linear-gradient(180deg,var(--panel),var(--bg));color:var(--text);font-family:"Poppins",system-ui,Segoe UI,Roboto,sans-serif}
-.container{max-width:1120px;margin:0 auto;padding:16px}@media(min-width:860px){.container{padding:24px}}
+:root{
+  --bg:#F5F4F0;
+  --panel:#FAF9F6;
+  --card:#FFFFFF;
+  --text:#1f2937;
+  --muted:#6B7280;
+  --gold:#d4af37;
+  --ok:#22c55e;
+  --danger:#ef4444;
+  --radius:16px;
+  --shadow:0 8px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.05);
+  --border:1px solid rgba(0,0,0,.08)
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,var(--panel),var(--bg));color:var(--text);font-family:"Poppins",system-ui,Segoe UI,Roboto,sans-serif}
+.container{max-width:1120px;margin:0 auto;padding:16px}
+@media(min-width:860px){.container{padding:24px}}
 header{position:sticky;top:0;background:rgba(250,249,246,.85);backdrop-filter:blur(8px);border-bottom:var(--border);z-index:20}
 header .container{display:flex;align-items:center;justify-content:space-between}
 .brand{display:flex;gap:12px;align-items:center;font-weight:900}
-.brand .mark{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--gold),#b18a1a);box-shadow:0 0 0 3px rgba(212,175,55,.25)}@media(min-width:860px){.brand .mark{width:36px;height:36px}}
+.brand .mark{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--gold),#b18a1a);box-shadow:0 0 0 3px rgba(212,175,55,.25)}
+@media(min-width:860px){.brand .mark{width:36px;height:36px}}
 .btn{appearance:none;border:none;border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;background:#f1f5f9;color:#111827;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);letter-spacing:.2px;transition:transform .06s ease,box-shadow .12s ease,background .12s ease}
-.btn:focus{outline:2px solid rgba(212,175,55,.45);outline-offset:2px}.btn:active{transform:translateY(1px) scale(.99)}
+.btn:focus{outline:2px solid rgba(212,175,55,.45);outline-offset:2px}
+.btn:active{transform:translateY(1px) scale(.99)}
 .btn.gold{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;box-shadow:0 4px 12px rgba(212,175,55,.25)}
 .btn.ghost{background:#fff;border:1px solid rgba(0,0,0,.08)}
 .btn.ok{background:linear-gradient(180deg,rgba(34,197,94,.2),rgba(34,197,94,.35));border:1px solid rgba(34,197,94,.45);color:#064e3b}
 .btn.danger{background:linear-gradient(180deg,rgba(239,68,68,.95),rgba(185,28,28,.98));color:#fff;box-shadow:0 4px 12px rgba(239,68,68,.25)}
-.grid{display:grid;gap:16px}.grid.two{grid-template-columns:1fr}@media(min-width:860px){.grid.two{grid-template-columns:1fr 1fr}}
+.grid{display:grid;gap:16px}
+.grid.two{grid-template-columns:1fr}
+@media(min-width:860px){.grid.two{grid-template-columns:1fr 1fr}}
 .card{background:var(--card);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
 .card .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:var(--border)}
-.card .card-c{padding:14px 16px}@media(min-width:860px){.card .card-h{padding:16px 18px}.card .card-c{padding:16px 18px}}
-.field{display:grid;gap:6px}label{font-size:.9rem;color:var(--muted)}
+.card .card-c{padding:14px 16px}
+@media(min-width:860px){
+  .card .card-h{padding:16px 18px}
+  .card .card-c{padding:16px 18px}
+}
+.field{display:grid;gap:6px}
+label{font-size:.9rem;color:var(--muted)}
 input,select{background:#fff;border:1px solid rgba(0,0,0,.12);color:#1f2937;border-radius:12px;padding:12px;width:100%}
-input::placeholder{color:#9aa3af}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-.hidden{display:none!important}.muted{color:var(--muted)}.mini{font-size:.9rem}
-.tabs{display:flex;gap:8px;flex-wrap:wrap}.tab{padding:10px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.12);cursor:pointer;font-weight:700;background:#fff}
+input::placeholder{color:#9aa3af}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.mini{font-size:.9rem}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{padding:10px 14px;border-radius:999px;border:1px solid rgba(0,0,0,.12);cursor:pointer;font-weight:700;background:#fff}
 .tab.active{background:linear-gradient(180deg,#f8e38c,#d4af37);color:#2a1f0b;border-color:#d4af37}
 .pill{padding:6px 10px;border-radius:999px;font-size:.8rem;border:1px solid rgba(0,0,0,.12);background:#fff}
 .pill.ok{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35);color:#065f46}
-.list{display:grid;gap:12px}.event-card{display:grid;gap:12px;padding:16px;border-radius:16px;border:var(--border);background:#fff}
-table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left;vertical-align:middle}thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
+.list{display:grid;gap:12px}
+.event-card{display:grid;gap:12px;padding:16px;border-radius:16px;border:var(--border);background:#fff}
+table{border-collapse:collapse;width:100%;min-width:720px}
+th,td{padding:10px 12px;border-bottom:1px solid rgba(0,0,0,.08);text-align:left;vertical-align:middle}
+thead th{background:#fafafa;font-size:.9rem;color:#4b5563}
 .qr-box{display:grid;place-items:center;padding:12px;border-radius:16px;background:#fafafa;border:1px dashed rgba(212,175,55,.5)}
 .scroll-area{max-height:420px;overflow:auto;padding-right:6px}
-.scroll-area::-webkit-scrollbar{width:10px}.scroll-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:10px}
-.logo-row{display:flex;gap:8px;align-items:center}.logo-prev{width:140px;height:70px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;object-fit:contain;background:#fff}
-.logo-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}.logo-editor.active{display:block}
-.logo-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}.logo-grid .field{min-width:0}
-.font-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}.font-editor.active{display:block}
-.font-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}.font-grid .field{min-width:0}
+.scroll-area::-webkit-scrollbar{width:10px}
+.scroll-area::-webkit-scrollbar-thumb{background:#e5e7eb;border-radius:10px}
+.logo-row{display:flex;gap:8px;align-items:center}
+.logo-prev{width:140px;height:70px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;object-fit:contain;background:#fff}
+.logo-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}
+.logo-editor.active{display:block}
+.logo-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
+.logo-grid .field{min-width:0}
+.font-editor{display:none;border-top:1px solid rgba(0,0,0,.08);padding-top:10px;margin-top:10px}
+.font-editor.active{display:block}
+.font-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}
+.font-grid .field{min-width:0}
 .video{width:100%;max-height:360px;border-radius:16px;border:1px solid rgba(0,0,0,.12);background:#000}
-.scan-wrap{position:relative}.scan-overlay{pointer-events:none;position:absolute;inset:0;display:grid;place-items:center}
+.scan-wrap{position:relative}
+.scan-overlay{pointer-events:none;position:absolute;inset:0;display:grid;place-items:center}
 .scan-frame{width:min(70%,520px);height:min(70vw,320px);border:3px solid rgba(255,255,255,.95);border-radius:14px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:200}
 .modal-body{background:#fff;border:var(--border);border-radius:18px;box-shadow:var(--shadow);padding:12px;max-width:780px;width:100%}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:var(--border)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#111827;color:#f9fafb;border:1px solid rgba(0,0,0,.2);padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);z-index:100}
 .fab{position:fixed;right:16px;bottom:16px;background:#111827;color:#fff;border-radius:999px;padding:12px 16px;box-shadow:var(--shadow);cursor:pointer}
+
+/* preview mini */
+.flyer-mini{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:16px;box-shadow:0 6px 14px rgba(0,0,0,.04);padding:8px 8px 14px 8px;display:flex;flex-direction:column;gap:6px;align-items:center;max-width:210px}
+.flyer-mini-title{font-weight:700;font-size:.8rem;color:#374151}
+.flyer-mini-frame{width:160px;height:284px;border-radius:14px;overflow:hidden;background:#0f172a;border:1px solid rgba(0,0,0,.08);display:grid;place-items:center}
+.flyer-mini-frame img{width:100%;height:100%;object-fit:cover}
+@media(max-width:920px){
+  .qr-box{order:2}
+  .flyer-mini{order:3;max-width:100%;flex-direction:row;justify-content:flex-start}
+  .flyer-mini-frame{width:140px;height:250px}
+}
 </style>
 </head>
 <body>
@@ -134,7 +183,6 @@ table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12p
   <!-- APP -->
   <section id="app" class="hidden">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px">
-      <!-- ORDEN SOLICITADO -->
       <div class="tabs" role="tablist">
         <div class="tab active" data-tab="eventos">Eventos</div>
         <div class="tab" data-tab="invitados">Invitados</div>
@@ -144,7 +192,7 @@ table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12p
       <span class="badge" id="modeBadge">cloud</span>
     </div>
 
-    <!-- IDENTIDAD (sólo aparece en pestaña Invitados) -->
+    <!-- IDENTIDAD (solo en Invitados) -->
     <div id="identidadTop" class="card" style="margin-bottom:16px">
       <div class="card-h">
         <strong>Identidad (logo global)</strong>
@@ -181,7 +229,7 @@ table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12p
         </div>
       </div>
 
-      <!-- Edición/QR — ABAJO -->
+      <!-- Edición / QR -->
       <div id="qrPreview" class="hidden card" style="margin-top:16px">
         <div class="card-h"><strong>Edición de invitación</strong></div>
         <div class="card-c">
@@ -191,15 +239,72 @@ table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12p
                 <div class="row" style="gap:18px">
                   <label class="mini">Tema flyer:
                     <select id="flyerThemeSel">
-                      <option value="oro">Oro</option><option value="plata">Plata</option><option value="noche">Noche</option><option value="custom">Personalizado</option>
+                      <option value="oro">Oro</option>
+                      <option value="noche">Noche</option>
+                      <option value="plata">Plata</option>
+                      <option value="custom">Personalizado</option>
                     </select>
                   </label>
-                  <div class="row color-pick"><span class="mini">Colores:</span>
+                  <label class="mini">Diseño fondo:
+                    <select id="flyerPatternSel">
+                      <option value="ninguno">Ninguno</option>
+                      <option value="ondas">Ondas suaves</option>
+                      <option value="diagonal">Diagonales</option>
+                      <option value="spot">Spotlight</option>
+                      <option value="dots">Puntos</option>
+                      <!-- NUEVOS -->
+                      <option value="confeti">Confeti</option>
+                      <option value="brillos">Brillos dorados</option>
+                      <option value="zigzag">Zigzag</option>
+                      <option value="olas-doradas">Olas doradas</option>
+                      <option value="radial-lines">Radial elegante</option>
+                      <option value="triangulos">Triángulos</option>
+                      <option value="cuadros">Cuadros</option>
+                      <option value="chevron">Chevron</option>
+                      <option value="luces">Luces suaves</option>
+                      <option value="esquinas">Esquinas decoradas</option>
+                      <option value="olitas">Olitas</option>
+                      <option value="glass">Glass</option>
+                    </select>
+                  </label>
+                  <div class="row color-pick">
+                    <span class="mini">Colores base:</span>
                     <label class="mini">Fondo <input type="color" id="bgColorPick" value="#ffffff"></label>
-                    <label class="mini">Texto <input type="color" id="txColorPick" value="#1f2937"></label>
+                    <label class="mini">Texto gral. <input type="color" id="txColorPick" value="#1f2937"></label>
+                    <label class="mini">Nº/DNI <input type="color" id="dniColorPick" value="#f8d56b"></label>
+                    <label class="mini">Fecha <input type="color" id="infoColorPick" value="#1f2937"></label>
                   </div>
                   <button class="btn ok" id="toggleFontEditorBtn" type="button">Editar tamaño de letra</button>
                 </div>
+
+                <!-- NUEVOS CAMPOS PARA EL FLYER VERTICAL -->
+                <div class="row" style="gap:12px; flex-wrap:wrap; margin-top:10px">
+                  <div class="field" style="width:150px">
+                    <label for="flyerTipo">Etiqueta</label>
+                    <input id="flyerTipo" value="FAMILIAR" />
+                  </div>
+                  <div class="field" style="width:150px">
+                    <label for="flyerAsiento">Asiento</label>
+                    <input id="flyerAsiento" placeholder="45-11" />
+                  </div>
+                  <div class="field" style="width:180px">
+                    <label for="flyerDni">DNI / Nº</label>
+                    <input id="flyerDni" placeholder="47.625.278" />
+                  </div>
+                  <div class="field" style="flex:1 1 260px; min-width:220px">
+                    <label for="flyerFecha">Fecha y hora</label>
+                    <input id="flyerFecha" value="Sábado, 14 de diciembre de 2025, 21:30" />
+                  </div>
+                  <div class="field" style="flex:1 1 260px; min-width:220px">
+                    <label for="flyerTitulo">Título final</label>
+                    <input id="flyerTitulo" value="CENA COLEGIO CENTRAL" />
+                  </div>
+                  <div class="field" style="flex:1 1 100%; min-width:220px">
+                    <label for="flyerFooter">Pie / dirección</label>
+                    <input id="flyerFooter" value="Salón balear · OK catering Eventos &amp; Egresados · Lateral Nte. Acceso Este 10034, Mendoza · 📞 +54 261 209 9178" />
+                  </div>
+                </div>
+                <!-- /NUEVOS CAMPOS -->
 
                 <div id="fontEditor" class="font-editor" style="margin-top:8px">
                   <div class="font-grid">
@@ -222,11 +327,13 @@ table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12p
 
                 <div id="logoEditor" class="logo-editor">
                   <div class="logo-grid">
-                    <div class="field"><label>Tamaño</label><input id="logoScale" type="range" min="10" max="300" step="1"></div>
-                    <div class="field"><label>Posición X</label><input id="logoX" type="range" min="0" max="1200" step="1"></div>
-                    <div class="field"><label>Posición Y</label><input id="logoY" type="range" min="0" max="675" step="1"></div>
+                    <div class="field"><label>Tamaño</label><input id="logoScale" type="range" min="10" max="350" step="1"></div>
+                    <div class="field"><label>Posición X</label><input id="logoX" type="range" min="0" max="1080" step="1"></div>
+                    <!-- AHORA PUEDE SUBIR HASTA ARRIBA DEL TODO Y BAJAR HASTA ABAJO -->
+                    <div class="field"><label>Posición Y</label><input id="logoY" type="range" min="0" max="1920" step="1"></div>
                     <div class="field"><label>&nbsp;</label><div class="row"><button class="btn ghost" id="logoResetBtn">Reset</button><button class="btn ok" id="logoToggleBtn">Mostrar/ocultar</button></div></div>
                   </div>
+                  <div class="mini muted">Ahora podés subirlo hasta 0px y bajarlo hasta 1920px 👍</div>
                 </div>
 
                 <div style="margin-top:8px">
@@ -238,7 +345,18 @@ table{border-collapse:collapse;width:100%;min-width:720px}th,td{padding:10px 12p
               </div>
             </div>
 
-            <div class="qr-box"><div id="qrCanvas" data-guest-id=""></div></div>
+            <div class="row" style="gap:16px;align-items:flex-start">
+              <div class="qr-box" style="flex:0 0 270px"><div id="qrCanvas" data-guest-id=""></div></div>
+
+              <!-- VISTA PREVIA MINI -->
+              <div class="flyer-mini" id="flyerMiniBox">
+                <div class="flyer-mini-title">Vista previa</div>
+                <div class="flyer-mini-frame">
+                  <img id="flyerMiniImg" alt="preview">
+                </div>
+                <div class="mini muted">Se actualiza al cambiar datos</div>
+              </div>
+            </div>
 
             <div class="row" id="qrButtonsRow">
               <button class="btn ok" id="genFlyerBtn" type="button">Generar flyer</button>
@@ -363,14 +481,26 @@ const state = {
   user:null, uid:null,
   events:[], guests:[],
   ui:{
-    currentTab:'eventos',     // ← pestaña inicial alineada con el orden solicitado
+    currentTab:'eventos',
     invitadosEventoActual:null,
     flyerTheme:'oro',
+    flyerPattern: localStorage.getItem('fq_flyer_pattern') || 'ninguno',
     lastGuestId:null,
-    bgColor:'#ffffff', txColor:'#1f2937',
+    bgColor: localStorage.getItem('fq_bg_color') || '#ffffff',
+    txColor: localStorage.getItem('fq_tx_color') || '#1f2937',
+    dniColor: localStorage.getItem('fq_dni_color') || '#f8d56b',
+    infoColor: localStorage.getItem('fq_info_color') || '#1f2937',
     logoDataUrl: localStorage.getItem('fq_logo') || null,
-    logo: JSON.parse(localStorage.getItem('fq_logo_cfg')||'{"x":60,"y":560,"scale":160,"visible":true}'),
-    fonts: JSON.parse(localStorage.getItem('fq_font_cfg') || JSON.stringify({head:46,event:72,guest:40,token:34,note:26}))
+    logo: JSON.parse(localStorage.getItem('fq_logo_cfg')||'{"x":390,"y":60,"scale":120,"visible":true}'),
+    fonts: JSON.parse(localStorage.getItem('fq_font_cfg') || JSON.stringify({head:46,event:72,guest:40,token:34,note:26})),
+    flyerMeta: JSON.parse(localStorage.getItem('fq_flyer_meta') || JSON.stringify({
+      tipo: 'FAMILIAR',
+      asiento: '45-11',
+      dni: '47.625.278',
+      fecha: 'Sábado, 14 de diciembre de 2025, 21:30',
+      titulo: 'CENA COLEGIO CENTRAL',
+      footer: 'Salón balear · OK catering Eventos & Egresados · Lateral Nte. Acceso Este 10034, Mendoza · 📞 +54 261 209 9178'
+    }))
   },
   flyers:{ lastDataUrl:null }
 };
@@ -383,23 +513,45 @@ function toast(msg){const t=document.createElement('div');t.className='toast';t.
 function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 function newToken(){let t;do{t=(Math.floor(Math.random()*900000)+100000).toString();}while(state.guests.some(g=>g.token===t));return t;}
 async function sha256hex(str){
-  try{ if (window.isSecureContext && crypto?.subtle){ const enc=new TextEncoder(); const buf=await crypto.subtle.digest('SHA-256', enc.encode(str)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); } }
-  catch(_){} let h=0; for (let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return ('00000000'+(h>>>0).toString(16)).slice(-8);
+  try{ if (window.isSecureContext && crypto?.subtle){
+    const enc=new TextEncoder(); const buf=await crypto.subtle.digest('SHA-256', enc.encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }}catch(_){}
+  let h=0; for (let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return ('00000000'+(h>>>0).toString(16)).slice(-8);
 }
 function emailValido(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e||'').trim());}
+function hexToRgbA(hex, alpha){
+  let c;
+  if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+    c=hex.substring(1).split('');
+    if(c.length==3){c=[c[0],c[0],c[1],c[1],c[2],c[2]];}
+    c='0x'+c.join('');
+    return `rgba(${(c>>16)&255},${(c>>8)&255},${c&255},${alpha})`;
+  }
+  return `rgba(248,213,107,${alpha})`;
+}
 
 /* ===== Firestore refs ===== */
 const colEvents=()=>db.collection('users').doc(state.uid).collection('events');
 const colGuests=()=>db.collection('users').doc(state.uid).collection('guests');
 const colPublic=()=>db.collection('public_guests');
 
-/* ===== Init Cloud ===== */
+/* ===== Init ===== */
 async function initCloud(){
-  if(!mustHaveFirebase){ $('needFirebase').classList.remove('hidden'); $('auth').classList.add('hidden'); $('app').classList.add('hidden'); return; }
+  if(!mustHaveFirebase){
+    $('needFirebase').classList.remove('hidden');
+    $('auth').classList.add('hidden');
+    $('app').classList.add('hidden');
+    return;
+  }
   if(!firebase?.apps?.length) firebase.initializeApp(firebaseConfig);
   auth=firebase.auth(); db=firebase.firestore();
   try{ await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);}catch{}
-  auth.onAuthStateChanged(async(user)=>{ state.user=user||null; state.uid=user?user.uid:null; syncUIAuth(); if(user){await cloudSubscribe();} });
+  auth.onAuthStateChanged(async(user)=>{
+    state.user=user||null; state.uid=user?user.uid:null;
+    syncUIAuth();
+    if(user){await cloudSubscribe();}
+  });
   $('auth').classList.remove('hidden');
   $('loginForm')?.addEventListener('submit',onLoginSubmit);
   $('regForm')?.addEventListener('submit',onRegisterSubmit);
@@ -408,11 +560,55 @@ async function initCloud(){
 /* ===== Registro / Login ===== */
 function setBusy(btn,isBusy,labelBusy,orig){btn.disabled=!!isBusy; btn.textContent=isBusy?labelBusy:orig;}
 function presentAuthError(where, err){
-  const map={'auth/email-already-in-use':'Ese correo ya está registrado.','auth/invalid-email':'Correo inválido.','auth/weak-password':'La contraseña debe tener 6+ caracteres.','auth/user-not-found':'No existe una cuenta con ese correo.','auth/wrong-password':'Contraseña incorrecta.','auth/network-request-failed':'Sin conexión o bloqueado por red.','auth/operation-not-allowed':'Habilitá "Email/Password" en Firebase Authentication.','auth/domain-not-allowed':'Dominio no autorizado.'};
-  const msg = map[err?.code] || 'No se pudo completar la operación.'; const el=$(where); if(el){el.textContent=msg; el.style.color='#b91c1c';} toast(msg);
+  const map={
+    'auth/email-already-in-use':'Ese correo ya está registrado.',
+    'auth/invalid-email':'Correo inválido.',
+    'auth/weak-password':'La contraseña debe tener 6+ caracteres.',
+    'auth/user-not-found':'No existe una cuenta con ese correo.',
+    'auth/wrong-password':'Contraseña incorrecta.',
+    'auth/network-request-failed':'Sin conexión o bloqueado por red.',
+    'auth/operation-not-allowed':'Habilitá "Email/Password" en Firebase Authentication.',
+    'auth/domain-not-allowed':'Dominio no autorizado.'
+  };
+  const msg = map[err?.code] || 'No se pudo completar la operación.';
+  const el=$(where); if(el){el.textContent=msg;el.style.color='#b91c1c';}
+  toast(msg);
 }
-async function onRegisterSubmit(e){e.preventDefault();const email=($('regEmail').value||'').trim().toLowerCase();const pass=$('regPass').value||'';const btn=$('registerBtn');$('authHintReg').textContent='';if(!emailValido(email))return presentAuthError('authHintReg',{code:'auth/invalid-email'});if(pass.length<6)return presentAuthError('authHintReg',{code:'auth/weak-password'});const orig=btn.textContent;setBusy(btn,true,'Creando…',orig);try{await auth.createUserWithEmailAndPassword(email,pass);$('authHintReg').style.color='#065f46';$('authHintReg').textContent='Cuenta creada ✔️';toast('Cuenta creada ✔️');}catch(err){presentAuthError('authHintReg',err);}finally{setBusy(btn,false,'',orig);}}
-async function onLoginSubmit(e){e.preventDefault();const email=($('loginEmail').value||'').trim().toLowerCase();const pass=$('loginPass').value||'';const btn=$('loginBtn');$('authHintLogin').textContent='';if(!emailValido(email))return presentAuthError('authHintLogin',{code:'auth/invalid-email'});const orig=btn.textContent;setBusy(btn,true,'Ingresando…',orig);try{await auth.signInWithEmailAndPassword(email,pass);$('authHintLogin').style.color='#065f46';$('authHintLogin').textContent='Bienvenido 👋';toast('Bienvenido 👋');}catch(err){presentAuthError('authHintLogin',err);}finally{setBusy(btn,false,'',orig);}}
+async function onRegisterSubmit(e){
+  e.preventDefault();
+  const email=($('regEmail').value||'').trim().toLowerCase();
+  const pass=$('regPass').value||'';
+  const btn=$('registerBtn');
+  $('authHintReg').textContent='';
+  if(!emailValido(email))return presentAuthError('authHintReg',{code:'auth/invalid-email'});
+  if(pass.length<6)return presentAuthError('authHintReg',{code:'auth/weak-password'});
+  const orig=btn.textContent;
+  setBusy(btn,true,'Creando…',orig);
+  try{
+    await auth.createUserWithEmailAndPassword(email,pass);
+    $('authHintReg').style.color='#065f46';
+    $('authHintReg').textContent='Cuenta creada ✔️';
+    toast('Cuenta creada ✔️');
+  }catch(err){presentAuthError('authHintReg',err);}
+  finally{setBusy(btn,false,'',orig);}
+}
+async function onLoginSubmit(e){
+  e.preventDefault();
+  const email=($('loginEmail').value||'').trim().toLowerCase();
+  const pass=$('loginPass').value||'';
+  const btn=$('loginBtn');
+  $('authHintLogin').textContent='';
+  if(!emailValido(email))return presentAuthError('authHintLogin',{code:'auth/invalid-email'});
+  const orig=btn.textContent;
+  setBusy(btn,true,'Ingresando…',orig);
+  try{
+    await auth.signInWithEmailAndPassword(email,pass);
+    $('authHintLogin').style.color='#065f46';
+    $('authHintLogin').textContent='Bienvenido 👋';
+    toast('Bienvenido 👋');
+  }catch(err){presentAuthError('authHintLogin',err);}
+  finally{setBusy(btn,false,'',orig);}
+}
 function logout(){try{auth.signOut();}catch{}}
 
 /* ===== UI ===== */
@@ -425,7 +621,7 @@ document.addEventListener('click',(e)=>{
   if(t.id==='genFlyerBtn') genFlyerNow();
   if(t.id==='descargarQRBtn') descargarQR();
   if(t.id==='descargarFlyerBtn') descargarFlyer();
-  if(t.id==='doneInviteBtn') { $('qrPreview').classList.add('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }
+  if(t.id==='doneInviteBtn'){ $('qrPreview').classList.add('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }
   if(t.id==='buscarInvitadosBtn') filtrarInvitadosActual();
   if(t.id==='scanBtn') toggleScanner();
   if(t.id==='validarManualBtn') procesarManual();
@@ -447,18 +643,31 @@ document.addEventListener('input',(e)=>{
   if(e.target.id==='buscarCad') renderCaducadas();
   if(e.target.id==='buscarEventoSel') renderInvitadosDeEvento(e.target.value);
   if(e.target.id==='flyerThemeSel'){ state.ui.flyerTheme=e.target.value; repaintCurrentFlyer(); }
-  if(e.target.id==='bgColorPick'){ state.ui.bgColor=e.target.value; repaintCurrentFlyer(); }
-  if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; repaintCurrentFlyer(); }
+  if(e.target.id==='flyerPatternSel'){ state.ui.flyerPattern=e.target.value; localStorage.setItem('fq_flyer_pattern',state.ui.flyerPattern); repaintCurrentFlyer(); }
+  if(e.target.id==='bgColorPick'){ state.ui.bgColor=e.target.value; localStorage.setItem('fq_bg_color',state.ui.bgColor); repaintCurrentFlyer(); }
+  if(e.target.id==='txColorPick'){ state.ui.txColor=e.target.value; localStorage.setItem('fq_tx_color',state.ui.txColor); repaintCurrentFlyer(); }
+  if(e.target.id==='dniColorPick'){ state.ui.dniColor=e.target.value; localStorage.setItem('fq_dni_color',state.ui.dniColor); repaintCurrentFlyer(); }
+  if(e.target.id==='infoColorPick'){ state.ui.infoColor=e.target.value; localStorage.setItem('fq_info_color',state.ui.infoColor); repaintCurrentFlyer(); }
   if(e.target.id==='logoFile' || e.target.id==='logoFileTop'){ handleLogoUpload(e.target.files?.[0]); }
   if(['logoScale','logoX','logoY'].includes(e.target.id)) updateLogoCfgFromInputs();
   if(['fontHead','fontEvent','fontGuest','fontToken','fontNote'].includes(e.target.id)) updateFontCfgFromInputs();
   if(e.target.id==='invTipo') updateEgresadoSelectorVisibility();
   if(e.target.id==='invEvento') populateEgresadosForSelectedEvent();
   if(e.target.id==='manualCode'){ const v=(e.target.value||'').trim(); if(v.length>=6) { procesarManual(true); } }
+
+  // NUEVOS CAMPOS DEL FLYER VERTICAL
+  if(['flyerTipo','flyerAsiento','flyerDni','flyerFecha','flyerTitulo','flyerFooter'].includes(e.target.id)){
+    updateFlyerMetaFromInputs();
+  }
 });
 document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') hideModal(); });
 
-function repaintCurrentFlyer(){ const gid=$('qrCanvas')?.dataset?.guestId; if(!gid) return; const g=state.guests.find(x=>x.id===gid); if(g) pintarFlyer(g); }
+function repaintCurrentFlyer(){
+  const gid=$('qrCanvas')?.dataset?.guestId;
+  if(!gid) return;
+  const g=state.guests.find(x=>x.id===gid);
+  if(g) pintarFlyer(g,{previewOnly:true});
+}
 function syncUIAuth(){
   const logged = !!state.user;
   $('auth').classList.toggle('hidden', logged ? true : false && !mustHaveFirebase);
@@ -473,6 +682,12 @@ function syncUIAuth(){
     renderCaducadas();
     updateLogoPreview(); updateLogoPreviewTop();
     initLogoEditorInputs(); initFontEditorInputs();
+    initFlyerMetaInputs();
+    const psel=$('flyerPatternSel'); if(psel) psel.value=state.ui.flyerPattern;
+    if($('bgColorPick')) $('bgColorPick').value = state.ui.bgColor;
+    if($('txColorPick')) $('txColorPick').value = state.ui.txColor;
+    if($('dniColorPick')) $('dniColorPick').value = state.ui.dniColor;
+    if($('infoColorPick')) $('infoColorPick').value = state.ui.infoColor;
   }
   $('modeBadge').textContent = 'cloud';
 }
@@ -502,7 +717,7 @@ function showTab(tab){
   $('vista-invitados').classList.toggle('hidden',tab!=='invitados');
   $('vista-caducadas').classList.toggle('hidden',tab!=='caducadas');
   $('vista-escanear').classList.toggle('hidden',tab!=='escanear');
-  // Mostrar el bloque de identidad SOLO en "invitados"
+
   const idTop = $('identidadTop');
   if (idTop) idTop.classList.toggle('hidden', tab!=='invitados');
 }
@@ -512,8 +727,11 @@ async function crearEvento(){
   const nombre=($('evNombre').value||'').trim();
   const fecha=($('evFecha').value||'');
   if(!nombre) return toast('Poné un nombre para el evento');
-  try{ await colEvents().add({nombre,fecha,finalizado:false}); toast('Evento creado'); $('evNombre').value=''; $('evFecha').value=''; }
-  catch(e){ console.error(e); toast('No se pudo crear'); }
+  try{
+    await colEvents().add({nombre,fecha,finalizado:false});
+    toast('Evento creado');
+    $('evNombre').value=''; $('evFecha').value='';
+  }catch(e){ console.error(e); toast('No se pudo crear'); }
 }
 function renderEventos(){
   const cont=$('listaEventos'); if(!cont) return; cont.innerHTML='';
@@ -553,7 +771,10 @@ async function deleteEventAndGuests(eventId){
     const guests = snap.docs.map(d=>({id:d.id}));
     for(let i=0;i<guests.length;i+=400){
       const batch = db.batch();
-      guests.slice(i,i+400).forEach(g=>{batch.delete(colGuests().doc(g.id)); try{batch.delete(colPublic().doc(`${state.uid}_${g.id}`));}catch(_){}})
+      guests.slice(i,i+400).forEach(g=>{
+        batch.delete(colGuests().doc(g.id));
+        try{batch.delete(colPublic().doc(`${state.uid}_${g.id}`));}catch(_){}
+      });
       await batch.commit();
     }
     await colEvents().doc(eventId).delete();
@@ -588,8 +809,14 @@ function populateEgresadosForSelectedEvent(){
   const eventId = $('invEvento').value;
   const sel = $('invEgresadoSel');
   if(!sel) return;
-  if(!eventId){ sel.innerHTML = '<option value="">Elegí egresado…</option>'; updateEgresadoSelectorVisibility(); return; }
-  const egresados = state.guests.filter(g => g.eventId===eventId && g.tipo==='egresado').sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  if(!eventId){
+    sel.innerHTML = '<option value="">Elegí egresado…</option>';
+    updateEgresadoSelectorVisibility();
+    return;
+  }
+  const egresados = state.guests
+    .filter(g => g.eventId===eventId && g.tipo==='egresado')
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
   let html = '<option value="">Elegí egresado…</option>';
   egresados.forEach(e => { html += `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`; });
   sel.innerHTML = html;
@@ -613,11 +840,13 @@ async function registrarInvitado(){
     const docRef=await colGuests().add(guest);
     const gid=docRef.id; state.ui.lastGuestId=gid; $('invNombre').value='';
     mostrarInvitacion({id:gid,...guest}); toast(`${tipo==='egresado'?'Egresado':'Invitado'} creado ✔️`);
-    (async()=>{ try{
-      const ev=state.events.find(e=>e.id===eventId);
-      const tokenHash=await sha256hex(token);
-      await colPublic().doc(`${state.uid}_${gid}`).set({ uid:state.uid, guestId:gid, nombre, eventName:ev?ev.nombre:'', tokenHash});
-    }catch(e){ console.warn('No se pudo escribir public_guests',e); }})();
+    (async()=>{
+      try{
+        const ev=state.events.find(e=>e.id===eventId);
+        const tokenHash=await sha256hex(token);
+        await colPublic().doc(`${state.uid}_${gid}`).set({ uid:state.uid, guestId:gid, nombre, eventName:ev?ev.nombre:'', tokenHash});
+      }catch(e){ console.warn('No se pudo escribir public_guests',e); }
+    })();
   }catch(e){ console.error(e); toast('No se pudo crear'); }
 }
 function buildShareURL(g){
@@ -625,23 +854,41 @@ function buildShareURL(g){
   return `${base}?u=${encodeURIComponent(state.uid)}&g=${encodeURIComponent(g.id)}&t=${encodeURIComponent(g.token)}`;
 }
 async function makeLocalQRCanvas(text, size=260){
-  try{ const ok=await(window.qrLibReady||Promise.resolve(false)); if(ok && window.QRCode?.toCanvas){ const c=document.createElement('canvas'); c.width=c.height=size; await new Promise((res,rej)=> QRCode.toCanvas(c,String(text),{width:size,errorCorrectionLevel:'M',margin:2},(err)=>err?rej(err):res())); return c; } }catch(_){}
+  try{
+    const ok=await(window.qrLibReady||Promise.resolve(false));
+    if(ok && window.QRCode?.toCanvas){
+      const c=document.createElement('canvas'); c.width=c.height=size;
+      await new Promise((res,rej)=> QRCode.toCanvas(c,String(text),{width:size,errorCorrectionLevel:'M',margin:2},(err)=>err?rej(err):res()));
+      return c;
+    }
+  }catch(_){}
   return null;
 }
 async function externalQRCanvas(text,size=260){
-  const img = await new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`; });
-  const c=document.createElement('canvas'); c.width=c.height=size; c.getContext('2d').drawImage(img,0,0,size,size); return c;
+  const img = await new Promise((res,rej)=>{
+    const i=new Image(); i.crossOrigin='anonymous';
+    i.onload=()=>res(i);
+    i.onerror=rej;
+    i.src=`https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&qzone=2&data=${encodeURIComponent(String(text))}`;
+  });
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  c.getContext('2d').drawImage(img,0,0,size,size);
+  return c;
 }
 function mostrarInvitacion(guest){
   const ev=state.events.find(e=>e.id===guest.eventId);
   const wrap=$('qrCanvas'); const url=buildShareURL(guest);
   wrap.innerHTML=''; wrap.dataset.guestId=guest.id;
-  (async()=>{ let c=await makeLocalQRCanvas(url,260); if(!c){ try{c=await externalQRCanvas(url,260);}catch(_){}} if(c) wrap.appendChild(c); })();
+  (async()=>{
+    let c=await makeLocalQRCanvas(url,260);
+    if(!c){ try{c=await externalQRCanvas(url,260);}catch(_){ } }
+    if(c) wrap.appendChild(c);
+  })();
   $('qrNombre').textContent=guest.nombre;
   $('qrToken').textContent=guest.token;
   $('qrEvento').textContent=ev?ev.nombre:'—';
   $('qrPreview').classList.remove('hidden');
-  pintarFlyer(guest);
+  pintarFlyer(guest,{previewOnly:true});
 }
 function genFlyerNow(){
   const gid=$('qrCanvas')?.dataset?.guestId; if(!gid) return toast('Primero crea o selecciona un invitado');
@@ -650,77 +897,540 @@ function genFlyerNow(){
 }
 
 /* ===== Logo / Fuentes ===== */
-function updateLogoPreview(){ const prev=$('logoPreview'); if(prev){ if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); } else { prev.src=''; prev.classList.add('hidden'); } } }
-function updateLogoPreviewTop(){ const prev=$('logoPreviewTop'); if(prev){ if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); } else { prev.src=''; prev.classList.add('hidden'); } } }
+function updateLogoPreview(){
+  const prev=$('logoPreview');
+  if(prev){
+    if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
+    else { prev.src=''; prev.classList.add('hidden'); }
+  }
+}
+function updateLogoPreviewTop(){
+  const prev=$('logoPreviewTop');
+  if(prev){
+    if(state.ui.logoDataUrl){ prev.src=state.ui.logoDataUrl; prev.classList.remove('hidden'); }
+    else { prev.src=''; prev.classList.add('hidden'); }
+  }
+}
 function handleLogoUpload(file){
   if(!file) return; const reader=new FileReader();
-  reader.onload = ()=>{ state.ui.logoDataUrl = reader.result; localStorage.setItem('fq_logo', state.ui.logoDataUrl); updateLogoPreview(); updateLogoPreviewTop(); repaintCurrentFlyer(); toast('Logo actualizado ✔️'); };
+  reader.onload = ()=>{
+    state.ui.logoDataUrl = reader.result;
+    localStorage.setItem('fq_logo', state.ui.logoDataUrl);
+    updateLogoPreview(); updateLogoPreviewTop(); repaintCurrentFlyer(); toast('Logo actualizado ✔️');
+  };
   reader.readAsDataURL(file);
 }
-function clearLogo(){ state.ui.logoDataUrl=null; localStorage.removeItem('fq_logo'); repaintCurrentFlyer(); updateLogoPreview(); updateLogoPreviewTop(); toast('Logo quitado'); }
-function initLogoEditorInputs(){ $('logoScale').value = state.ui.logo.scale; $('logoX').value = state.ui.logo.x; $('logoY').value = state.ui.logo.y; }
-function updateLogoCfgFromInputs(){ state.ui.logo.scale=parseInt($('logoScale').value||160,10); state.ui.logo.x=parseInt($('logoX').value||60,10); state.ui.logo.y=parseInt($('logoY').value||560,10); localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo)); repaintCurrentFlyer(); }
-function resetLogoCfg(){ state.ui.logo = {x:60,y:560,scale:160,visible:true}; localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo)); initLogoEditorInputs(); repaintCurrentFlyer(); }
-function toggleLogoVisible(){ state.ui.logo.visible = !state.ui.logo.visible; localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo)); repaintCurrentFlyer(); }
+function clearLogo(){
+  state.ui.logoDataUrl=null;
+  localStorage.removeItem('fq_logo');
+  repaintCurrentFlyer(); updateLogoPreview(); updateLogoPreviewTop();
+  toast('Logo quitado');
+}
+function initLogoEditorInputs(){
+  $('logoScale').value = state.ui.logo.scale;
+  $('logoX').value = state.ui.logo.x;
+  $('logoY').value = state.ui.logo.y;
+}
+function updateLogoCfgFromInputs(){
+  state.ui.logo.scale=parseInt($('logoScale').value||160,10);
+  state.ui.logo.x=parseInt($('logoX').value||60,10);
+  state.ui.logo.y=parseInt($('logoY').value||60,10);  // ahora 0..1920
+  localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo));
+  repaintCurrentFlyer();
+}
+function resetLogoCfg(){
+  state.ui.logo = {x:390,y:60,scale:120,visible:true};
+  localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo));
+  initLogoEditorInputs(); repaintCurrentFlyer();
+}
+function toggleLogoVisible(){
+  state.ui.logo.visible = !state.ui.logo.visible;
+  localStorage.setItem('fq_logo_cfg', JSON.stringify(state.ui.logo));
+  repaintCurrentFlyer();
+}
 
 /* ===== Editor de fuentes ===== */
-function initFontEditorInputs(){ $('fontHead').value = state.ui.fonts.head; $('fontEvent').value = state.ui.fonts.event; $('fontGuest').value = state.ui.fonts.guest; $('fontToken').value = state.ui.fonts.token; $('fontNote').value = state.ui.fonts.note; initFontValueLabels(); }
-function updateFontCfgFromInputs(){ state.ui.fonts.head=parseInt($('fontHead').value||46,10); state.ui.fonts.event=parseInt($('fontEvent').value||72,10); state.ui.fonts.guest=parseInt($('fontGuest').value||40,10); state.ui.fonts.token=parseInt($('fontToken').value||34,10); state.ui.fonts.note=parseInt($('fontNote').value||26,10); localStorage.setItem('fq_font_cfg', JSON.stringify(state.ui.fonts)); initFontValueLabels(); repaintCurrentFlyer(); }
-function initFontValueLabels(){ $('fontHeadVal').textContent=state.ui.fonts.head+' px'; $('fontEventVal').textContent=state.ui.fonts.event+' px'; $('fontGuestVal').textContent=state.ui.fonts.guest+' px'; $('fontTokenVal').textContent=state.ui.fonts.token+' px'; $('fontNoteVal').textContent=state.ui.fonts.note+' px'; }
-function resetFontCfg(){ state.ui.fonts = { head:46, event:72, guest:40, token:34, note:26 }; localStorage.setItem('fq_font_cfg', JSON.stringify(state.ui.fonts)); initFontEditorInputs(); repaintCurrentFlyer(); }
+function initFontEditorInputs(){
+  $('fontHead').value = state.ui.fonts.head;
+  $('fontEvent').value = state.ui.fonts.event;
+  $('fontGuest').value = state.ui.fonts.guest;
+  $('fontToken').value = state.ui.fonts.token;
+  $('fontNote').value = state.ui.fonts.note;
+  initFontValueLabels();
+}
+function updateFontCfgFromInputs(){
+  state.ui.fonts.head=parseInt($('fontHead').value||46,10);
+  state.ui.fonts.event=parseInt($('fontEvent').value||72,10);
+  state.ui.fonts.guest=parseInt($('fontGuest').value||40,10);
+  state.ui.fonts.token=parseInt($('fontToken').value||34,10);
+  state.ui.fonts.note=parseInt($('fontNote').value||26,10);
+  localStorage.setItem('fq_font_cfg', JSON.stringify(state.ui.fonts));
+  initFontValueLabels(); repaintCurrentFlyer();
+}
+function initFontValueLabels(){
+  $('fontHeadVal').textContent=state.ui.fonts.head+' px';
+  $('fontEventVal').textContent=state.ui.fonts.event+' px';
+  $('fontGuestVal').textContent=state.ui.fonts.guest+' px';
+  $('fontTokenVal').textContent=state.ui.fonts.token+' px';
+  $('fontNoteVal').textContent=state.ui.fonts.note+' px';
+}
+function resetFontCfg(){
+  state.ui.fonts = { head:46, event:72, guest:40, token:34, note:26 };
+  localStorage.setItem('fq_font_cfg', JSON.stringify(state.ui.fonts));
+  initFontEditorInputs(); repaintCurrentFlyer();
+}
 
-/* ===== Flyer ===== */
-async function pintarFlyer(guest){
+/* ===== NUEVO: inputs de flyer meta ===== */
+function initFlyerMetaInputs(){
+  const m = state.ui.flyerMeta || {};
+  if($('flyerTipo')) $('flyerTipo').value = m.tipo || '';
+  if($('flyerAsiento')) $('flyerAsiento').value = m.asiento || '';
+  if($('flyerDni')) $('flyerDni').value = m.dni || '';
+  if($('flyerFecha')) $('flyerFecha').value = m.fecha || '';
+  if($('flyerTitulo')) $('flyerTitulo').value = m.titulo || '';
+  if($('flyerFooter')) $('flyerFooter').value = m.footer || '';
+}
+function updateFlyerMetaFromInputs(){
+  const meta = {
+    tipo: $('flyerTipo')?.value || '',
+    asiento: $('flyerAsiento')?.value || '',
+    dni: $('flyerDni')?.value || '',
+    fecha: $('flyerFecha')?.value || '',
+    titulo: $('flyerTitulo')?.value || '',
+    footer: $('flyerFooter')?.value || ''
+  };
+  state.ui.flyerMeta = meta;
+  localStorage.setItem('fq_flyer_meta', JSON.stringify(meta));
+  repaintCurrentFlyer();
+}
+
+/* ===== Flyer (FORMATO HISTORIA) ===== */
+async function pintarFlyer(guest,opts={}){
   const ev=state.events.find(e=>e.id===guest.eventId);
-  const theme = state.ui.flyerTheme || 'oro';
+  const theme = state.ui.flyerTheme || 'noche';
+  const pattern = state.ui.flyerPattern || 'ninguno';
   const bgPick = state.ui.bgColor, txPick = state.ui.txColor;
+  const dniColor = state.ui.dniColor;
+  const infoColor = state.ui.infoColor;
   const F = state.ui.fonts;
-  const c=document.createElement('canvas'); c.width=1200; c.height=675;
+  const meta = state.ui.flyerMeta || {};
+
+  const c=document.createElement('canvas'); c.width=1080; c.height=1920;
   const ctx=c.getContext('2d');
 
-  if(theme==='oro'){ const g=ctx.createLinearGradient(0,0,0,c.height); g.addColorStop(0,'#fff7d1'); g.addColorStop(.55,'#f5d777'); g.addColorStop(1,'#d4af37'); ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height); ctx.fillStyle='rgba(0,0,0,.08)'; for(let i=0;i<18;i++){ctx.fillRect(70*i,0,1,c.height);} }
-  else if(theme==='plata'){ const g=ctx.createLinearGradient(0,0,c.width,0); g.addColorStop(0,'#f5f7fa'); g.addColorStop(1,'#cfd8dc'); ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height); ctx.fillStyle='rgba(0,0,0,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);} }
-  else if(theme==='noche'){ const g=ctx.createLinearGradient(0,0,0,c.height); g.addColorStop(0,'#0b1020'); g.addColorStop(1,'#1f2937'); ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height); ctx.fillStyle='rgba(255,255,255,.06)'; for(let i=0;i<14;i++){ctx.fillRect(0,48*i,c.width,1);} }
-  else { ctx.fillStyle = bgPick || '#ffffff'; ctx.fillRect(0,0,c.width,c.height); }
+  // fondo base
+  if(theme==='noche'){
+    const g=ctx.createLinearGradient(0,0,0,c.height);
+    g.addColorStop(0,'#050810');
+    g.addColorStop(0.5,'#0f172a');
+    g.addColorStop(1,'#0b1020');
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+  } else if(theme==='oro'){
+    const g=ctx.createLinearGradient(0,0,0,c.height);
+    g.addColorStop(0,'#fff4d4');
+    g.addColorStop(.4,'#fef9ef');
+    g.addColorStop(1,'#fff');
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+  } else if(theme==='plata'){
+    const g=ctx.createLinearGradient(0,0,c.width,0);
+    g.addColorStop(0,'#e5e7eb'); g.addColorStop(1,'#9ca3af');
+    ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+  } else {
+    ctx.fillStyle = bgPick || '#ffffff';
+    ctx.fillRect(0,0,c.width,c.height);
+  }
 
-  ctx.fillStyle = (theme==='noche') ? '#f3f4f6' : (txPick || '#1f2937');
+  // patrones más marcados
+  drawPattern(ctx, pattern, theme, bgPick, c.width, c.height);
 
-  ctx.font=`800 ${F.head}px "Poppins",sans-serif`; ctx.fillText('ESTÁS INVITADO/A A', 60, 80 + F.head);
-  ctx.font=`900 ${F.event}px "Poppins",sans-serif`; wrapText(ctx, ev?ev.nombre:'', 60, 150 + F.head, 680, F.event);
-  ctx.font=`700 ${F.guest}px "Poppins",sans-serif`; wrapText(ctx, `Nombre: ${guest.nombre}`, 60, 170 + F.head + F.event, 680, F.guest);
-  ctx.font=`600 ${F.token}px "Poppins",sans-serif`; ctx.fillText(`Token: ${guest.token}`, 60, 200 + F.head + F.event + F.guest);
+  const textColor = (theme==='noche') ? '#fefce8' : (txPick || '#111827');
+  const gold = '#f8d56b';
 
-  /* Tipo de invitación (Egresado / Invitado) */
-  ctx.font=`600 ${Math.max(22, Math.min(48, F.token-4))}px "Poppins",sans-serif`;
-  ctx.fillText(`Tipo: ${guest.tipo==='egresado'?'Egresado':'Invitado'}`, 60, 230 + F.head + F.event + F.guest);
+  // LOGO — CON FONDO QUE SE ADAPTA
+  if(state.ui.logoDataUrl && state.ui.logo.visible){
+    try{
+      const img = await loadImage(state.ui.logoDataUrl);
+      const baseW=310;
+      const scale=(state.ui.logo.scale||120)/100;
+      const w=Math.max(80,Math.round(baseW*scale));
+      const ratio = (img.naturalWidth||img.width)/(img.naturalHeight||img.height);
+      const h=Math.round(w/ratio);
+      const x = Math.min(Math.max(0,(state.ui.logo.x ?? ((1080-w)/2))), 1080 - w);
+      const y = Math.min(Math.max(0,(state.ui.logo.y ?? 40)), 1920 - h);
 
-  ctx.font=`500 ${F.note}px "Poppins",sans-serif`; ctx.fillText('Presentá este flyer al ingresar. El QR o el token son de uso único.', 60, 260 + F.head + F.event + F.guest);
+      // color de fondo según tema
+      let logoBg;
+      if(theme==='noche'){
+        logoBg = 'rgba(4,6,13,.55)';
+      }else if(theme==='oro'){
+        logoBg = hexToRgbA(bgPick||'#fff7d7',0.65);
+      }else if(theme==='plata'){
+        logoBg = hexToRgbA('#e5e7eb',0.75);
+      }else{
+        logoBg = hexToRgbA(bgPick||'#ffffff',0.75);
+      }
+      ctx.save();
+      ctx.fillStyle = logoBg;
+      roundRect(ctx, x-20, y-16, w+40, h+32, 32);
+      ctx.fill();
+      ctx.restore();
 
-  const url=buildShareURL(guest); let qrCan = await makeLocalQRCanvas(url, 260); if(!qrCan){ try{ qrCan = await externalQRCanvas(url, 260); }catch(_){ } }
-  const qrX = c.width - 60 - 260, qrY = 60;
-  if(qrCan){ ctx.save(); ctx.shadowColor='rgba(0,0,0,.18)'; ctx.shadowBlur=12; ctx.fillStyle='#fff'; roundRect(ctx, qrX-10, qrY-10, 280, 280, 16); ctx.fill(); ctx.restore(); ctx.drawImage(qrCan, qrX, qrY, 260, 260); }
-  if(state.ui.logoDataUrl && state.ui.logo.visible){ try{ const img = await loadImage(state.ui.logoDataUrl); const baseW=360; const scale=(state.ui.logo.scale||160)/100; const w=Math.max(40,Math.round(baseW*scale)); const ratio = (img.naturalWidth||img.width)/(img.naturalHeight||img.height); const h=Math.round(w/ratio); const x=Math.min(Math.max(0,state.ui.logo.x||60),1200-w); const y=Math.min(Math.max(0,state.ui.logo.y||560),675-h); ctx.drawImage(img,x,y,w,h); }catch(e){ console.warn('Logo invalido',e); } }
+      ctx.drawImage(img, x, y, w, h);
+    }catch(e){ console.warn('Logo invalido',e); }
+  }
 
-  state.flyers.lastDataUrl=c.toDataURL('image/png'); $('checkinFlyerImg').src=state.flyers.lastDataUrl;
+  // etiqueta tipo
+  ctx.fillStyle = textColor;
+  ctx.textAlign='center';
+  ctx.font = `500 ${Math.max(26, F.note)}px "Poppins",sans-serif`;
+  ctx.fillText(meta.tipo || 'FAMILIAR', 1080/2, 350);
+
+  // título grande
+  ctx.fillStyle = gold;
+  ctx.font = `900 90px "Poppins",sans-serif`;
+  ctx.fillText('EGRESADOS', 1080/2, 440);
+
+  // asiento
+  ctx.fillStyle = gold;
+  ctx.font = `500 36px "Poppins",sans-serif`;
+  const asientoText = meta.asiento ? `ASIENTO: ${meta.asiento}` : '';
+  if(asientoText) ctx.fillText(asientoText, 1080/2, 505);
+
+  const url=buildShareURL(guest);
+  let qrCan = await makeLocalQRCanvas(url, 520);
+  if(!qrCan){ try{ qrCan = await externalQRCanvas(url, 520); }catch(_){ } }
+  const qrX = (1080 - 520)/2;
+  const qrY = 574;
+  if(qrCan){
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.25)';
+    ctx.shadowBlur=30;
+    ctx.fillStyle= (theme==='noche') ? 'rgba(15,23,42,.35)' : 'rgba(15,23,42,.12)';
+    roundRect(ctx, qrX-20, qrY-20, 520+40, 520+40, 36);
+    ctx.fill();
+    ctx.restore();
+    ctx.drawImage(qrCan, qrX, qrY, 520, 520);
+  }
+
+  // nombre
+  ctx.fillStyle = gold;
+  ctx.font = `700 52px "Poppins",sans-serif`;
+  ctx.fillText(guest.nombre.toUpperCase(), 1080/2, 1186);
+
+  // DNI/número — ahora con color aparte
+  const dniText = meta.dni || '';
+  if(dniText){
+    const w = ctx.measureText(dniText).width + 120;
+    const x = (1080 - w)/2;
+    const y = 1244;
+    ctx.fillStyle= hexToRgbA(dniColor,0.12);
+    roundRect(ctx, x, y-48, w, 90, 50);
+    ctx.fill();
+    ctx.strokeStyle= hexToRgbA(dniColor,0.55);
+    ctx.lineWidth=2;
+    roundRect(ctx, x, y-48, w, 90, 50);
+    ctx.stroke();
+    ctx.fillStyle = dniColor;
+    ctx.font = `600 38px "Poppins",sans-serif`;
+    ctx.fillText(dniText, 1080/2, y+5);
+  }
+
+  // fecha — color aparte
+  ctx.fillStyle = infoColor;
+  ctx.font = `400 30px "Poppins",sans-serif`;
+  if(meta.fecha) wrapText(ctx, meta.fecha, 540, 1376, 880, 38, 6);
+
+  // título final
+  ctx.fillStyle = gold;
+  ctx.font = `900 56px "Poppins",sans-serif`;
+  if(meta.titulo) wrapText(ctx, meta.titulo.toUpperCase(), 540, 1476, 920, 62, 10);
+
+  // footer
+  ctx.fillStyle = (theme==='noche') ? 'rgba(248,244,237,.6)' : 'rgba(17,24,39,.6)';
+  ctx.font = `400 26px "Poppins",sans-serif`;
+  if(meta.footer) wrapText(ctx, meta.footer, 540, 1606, 920, 32, 4);
+
+  const dataUrl = c.toDataURL('image/png');
+  state.flyers.lastDataUrl=dataUrl;
+  $('checkinFlyerImg').src=dataUrl;
+  const mini=$('flyerMiniImg'); if(mini) mini.src=dataUrl;
+
+  if(!opts.previewOnly){
+    // nada
+  }
 }
-function wrapText(ctx, text, x, y, maxWidth, lineHeight, lineGap=12){ const words=String(text||'').split(' '); let line='', yy=y; for(let n=0;n<words.length;n++){ const test=line+words[n]+' '; if(ctx.measureText(test).width>maxWidth && n>0){ ctx.fillText(line,x,yy); line=words[n]+' '; yy+=lineHeight+lineGap; } else line=test; } ctx.fillText(line,x,yy); }
-function roundRect(ctx, x, y, w, h, r){ const rr=Math.min(r,w/2,h/2); ctx.beginPath(); ctx.moveTo(x+rr,y); ctx.arcTo(x+w,y,x+w,y+h,rr); ctx.arcTo(x+w,y+h,x,y+h,rr); ctx.arcTo(x,y+h,x,y,rr); ctx.arcTo(x,y,x+w,y,rr); ctx.closePath(); }
-function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+
+function drawPattern(ctx, pattern, theme, baseColor, w, h){
+  if(pattern==='ninguno') return;
+  const soft = hexToRgbA(baseColor || (theme==='noche'?'#020617':'#f3f4f6'), theme==='noche'?0.25:0.23);
+  ctx.save();
+  ctx.fillStyle=soft;
+
+  if(pattern==='ondas'){
+    for(let y=-140;y<h+140;y+=140){
+      ctx.beginPath();
+      ctx.moveTo(0,y);
+      for(let x=0;x<=w;x+=120){
+        ctx.quadraticCurveTo(x+60,y-90,x+120,y);
+      }
+      ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();
+      ctx.fill();
+    }
+  } else if(pattern==='diagonal'){
+    const step=140;
+    ctx.lineWidth=24;
+    ctx.strokeStyle=soft;
+    for(let i=-h;i<w;i+=step){
+      ctx.beginPath();
+      ctx.moveTo(i,0);
+      ctx.lineTo(i+h, h);
+      ctx.stroke();
+    }
+  } else if(pattern==='spot'){
+    const grd=ctx.createRadialGradient(w*0.5,250,0,w*0.5,250,560);
+    grd.addColorStop(0,hexToRgbA(baseColor||'#ffffff',0.65));
+    grd.addColorStop(0.6,hexToRgbA('#000',0));
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grd;
+    ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle=hexToRgbA(baseColor||'#ffffff',0.15);
+    ctx.lineWidth=28;
+    ctx.beginPath();
+    ctx.arc(w/2, 240, 180, 0, Math.PI*2);
+    ctx.stroke();
+  } else if(pattern==='dots'){
+    for(let y=80;y<h;y+=120){
+      for(let x=80;x<w;x+=120){
+        ctx.beginPath();
+        ctx.arc(x,y,10,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+  } else if(pattern==='confeti'){
+    for(let i=0;i<140;i++){
+      const x=Math.random()*w;
+      const y=Math.random()*h;
+      const r=6+Math.random()*18;
+      ctx.fillStyle = i%2 ? hexToRgbA('#d4af37',0.45) : hexToRgbA('#ffffff',0.35);
+      ctx.beginPath();
+      ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.fill();
+    }
+  } else if(pattern==='brillos'){
+    for(let i=0;i<60;i++){
+      const x=Math.random()*w;
+      const y=Math.random()*h*0.75;
+      ctx.strokeStyle=hexToRgbA('#f8d56b',0.8);
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(x-28,y);
+      ctx.lineTo(x+28,y);
+      ctx.moveTo(x,y-28);
+      ctx.lineTo(x,y+28);
+      ctx.stroke();
+    }
+  } else if(pattern==='zigzag'){
+    ctx.strokeStyle=soft;
+    ctx.lineWidth=14;
+    for(let y=80;y<h+80;y+=140){
+      ctx.beginPath();
+      let up=true;
+      for(let x=-40;x<w+40;x+=90){
+        ctx.lineTo(x, up? y-45 : y+45);
+        up=!up;
+      }
+      ctx.stroke();
+    }
+  } else if(pattern==='olas-doradas'){
+    ctx.strokeStyle=hexToRgbA('#d4af37',0.5);
+    ctx.lineWidth=14;
+    for(let y=120;y<h+80;y+=160){
+      ctx.beginPath();
+      for(let x=0;x<w;x+=110){
+        ctx.quadraticCurveTo(x+55,y-50,x+110,y);
+      }
+      ctx.stroke();
+    }
+  } else if(pattern==='radial-lines'){
+    ctx.strokeStyle=hexToRgbA(baseColor||'#ffffff',0.15);
+    ctx.lineWidth=12;
+    const cx=w/2, cy=280;
+    for(let a=0;a<Math.PI*2;a+=Math.PI/30){
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+Math.cos(a)*w, cy+Math.sin(a)*h);
+      ctx.stroke();
+    }
+  } else if(pattern==='triangulos'){
+    for(let y=0;y<h+200;y+=140){
+      for(let x=0;x<w+200;x+=160){
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+120,y+70);
+        ctx.lineTo(x-40,y+70);
+        ctx.closePath();
+        ctx.fillStyle = hexToRgbA(baseColor||'#ffffff',0.32);
+        ctx.fill();
+      }
+    }
+  } else if(pattern==='cuadros'){
+    const size=140;
+    for(let y=0;y<h+size;y+=size){
+      for(let x=0;x<w+size;x+=size){
+        if((x+y)/size % 2 === 0){
+          ctx.fillStyle = hexToRgbA(baseColor||'#ffffff',0.24);
+        }else{
+          ctx.fillStyle = hexToRgbA(baseColor||'#000000',0.04);
+        }
+        ctx.fillRect(x,y,size,size);
+      }
+    }
+  } else if(pattern==='chevron'){
+    ctx.strokeStyle=hexToRgbA(baseColor||'#ffffff',0.2);
+    ctx.lineWidth=18;
+    for(let y=-40;y<h+80;y+=120){
+      ctx.beginPath();
+      ctx.moveTo(0,y);
+      let up=true;
+      for(let x=0;x<=w+80;x+=90){
+        ctx.lineTo(x, up? y+42 : y-42);
+        up=!up;
+      }
+      ctx.stroke();
+    }
+  } else if(pattern==='luces'){
+    for(let i=0;i<40;i++){
+      const x=Math.random()*w;
+      const y=Math.random()*h;
+      const grd=ctx.createRadialGradient(x,y,0,x,y,120);
+      grd.addColorStop(0,hexToRgbA('#ffffff',0.5));
+      grd.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=grd;
+      ctx.beginPath();
+      ctx.arc(x,y,120,0,Math.PI*2);
+      ctx.fill();
+    }
+  } else if(pattern==='esquinas'){
+    ctx.fillStyle=hexToRgbA(baseColor||'#ffffff',0.55);
+    roundRect(ctx,0,0,150,150,0); // top-left
+    roundRect(ctx,w-150,0,150,150,0); // top-right
+    ctx.fillStyle=hexToRgbA(baseColor||'#000000',0.03);
+    roundRect(ctx,0,h-150,150,150,0);
+    roundRect(ctx,w-150,h-150,150,150,0);
+  } else if(pattern==='olitas'){
+    ctx.strokeStyle=hexToRgbA(baseColor||'#ffffff',0.4);
+    ctx.lineWidth=9;
+    for(let y=60;y<h+100;y+=90){
+      ctx.beginPath();
+      for(let x=0;x<w;x+=120){
+        ctx.quadraticCurveTo(x+60,y-35,x+120,y);
+      }
+      ctx.stroke();
+    }
+  } else if(pattern==='glass'){
+    const grd=ctx.createLinearGradient(0,0,0,h);
+    grd.addColorStop(0,hexToRgbA('#ffffff',0.26));
+    grd.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=grd;
+    roundRect(ctx,42,120,w-84,420,40);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight, lineGap=12){
+  const words=String(text||'').split(' ');
+  let line='', yy=y;
+  for(let n=0;n<words.length;n++){
+    const test=line+words[n]+' ';
+    if(ctx.measureText(test).width>maxWidth && n>0){
+      ctx.fillText(line,x,yy);
+      line=words[n]+' ';
+      yy+=lineHeight+lineGap;
+    } else line=test;
+  }
+  ctx.fillText(line,x,yy);
+}
+function roundRect(ctx, x, y, w, h, r){
+  const rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
+}
+function loadImage(src){
+  return new Promise((res,rej)=>{
+    const i=new Image(); i.crossOrigin='anonymous';
+    i.onload=()=>res(i); i.onerror=rej; i.src=src;
+  });
+}
 
 /* Descargar / Imprimir */
 function descargarQR(){
-  const wrap=$('qrCanvas'); if(!wrap) return; const node=wrap.querySelector('canvas,img'); if(!node) return;
-  const g=state.guests.find(x=>x.id===wrap.dataset.guestId); const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
-  if(node.tagName.toLowerCase()==='canvas'){ const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=node.toDataURL('image/png'); a.click(); return; }
-  if(node.tagName.toLowerCase()==='img'){ const c=document.createElement('canvas'); const w=node.naturalWidth||260,h=node.naturalHeight||260; c.width=w;c.height=h; const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ c.getContext('2d').drawImage(img,0,0,w,h); const a=document.createElement('a'); a.download=`QR_${name}.png`; a.href=c.toDataURL('image/png'); a.click(); }; img.src=node.src; }
+  const wrap=$('qrCanvas'); if(!wrap) return;
+  const node=wrap.querySelector('canvas,img'); if(!node) return;
+  const g=state.guests.find(x=>x.id===wrap.dataset.guestId);
+  const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
+  if(node.tagName.toLowerCase()==='canvas'){
+    const a=document.createElement('a');
+    a.download=`QR_${name}.png`;
+    a.href=node.toDataURL('image/png');
+    a.click();
+    return;
+  }
+  if(node.tagName.toLowerCase()==='img'){
+    const c=document.createElement('canvas');
+    const w=node.naturalWidth||260,h=node.naturalHeight||260;
+    c.width=w;c.height=h;
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>{
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      const a=document.createElement('a');
+      a.download=`QR_${name}.png`;
+      a.href=c.toDataURL('image/png');
+      a.click();
+    };
+    img.src=node.src;
+  }
 }
-function descargarFlyer(){ const url=state.flyers.lastDataUrl; if(!url) return toast('Primero generá un flyer'); const gid=$('qrCanvas')?.dataset?.guestId; const g=state.guests.find(x=>x.id===gid); const name=g?g.nombre.replace(/\s+/g,'_'):'invitado'; const a=document.createElement('a'); a.download=`FLYER_${name}.png`; a.href=url; a.click(); }
-function verQR(guestId){ const g=state.guests.find(x=>x.id===guestId); if(!g) return; mostrarInvitacion(g); showTab('invitados'); window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}); }
+function descargarFlyer(){
+  const gid=$('qrCanvas')?.dataset?.guestId;
+  const g=state.guests.find(x=>x.id===gid);
+  descargarFlyerDirect(g);
+}
+function descargarFlyerDirect(g){
+  const url=state.flyers.lastDataUrl;
+  if(!url) return toast('Primero generá un flyer');
+  const name=g?g.nombre.replace(/\s+/g,'_'):'invitado';
+  const a=document.createElement('a');
+  a.download=`FLYER_${name}.png`;
+  a.href=url;
+  a.click();
+}
+function verQR(guestId){
+  const g=state.guests.find(x=>x.id===guestId); if(!g) return;
+  mostrarInvitacion(g);
+  showTab('invitados');
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
 function regenerarQR(guestId){ verQR(guestId); toast('QR regenerado'); }
+
+/* ===== NUEVO: descargar flyer desde tabla ===== */
+async function descargarFlyerInvitado(guestId){
+  const g = state.guests.find(x=>x.id===guestId);
+  if(!g){ toast('Invitado no encontrado'); return; }
+  await pintarFlyer(g);    // lo pinta con los colores / logo actuales
+  descargarFlyerDirect(g); // baja directo
+}
 
 /* Invitados recientes */
 function renderInvitadosRecientes(){
-  const cont=$('listaInvitadosRecientes'); if(!cont) return; const ult=state.guests.slice(-12).reverse();
+  const cont=$('listaInvitadosRecientes'); if(!cont) return;
+  const ult=state.guests.slice(-12).reverse();
   if(ult.length===0){cont.innerHTML='<div class="muted">Todavía no hay invitados.</div>'; return;}
   cont.innerHTML='<div class="list"></div>'; const list=cont.querySelector('.list');
   ult.forEach(g=>{
@@ -735,6 +1445,7 @@ function renderInvitadosRecientes(){
       <div class="actions">
         <button class="btn ghost" data-verqr="${g.id}">Ver QR</button>
         <button class="btn ok" data-regen="${g.id}">Re-generar</button>
+        <button class="btn ok" onclick="descargarFlyerInvitado('${g.id}')">Descargar flyer</button>
         <button class="btn danger" onclick="deleteGuestCascade('${g.id}')">Eliminar</button>
         ${g.used?'<span class="pill">Caducada</span>':'<span class="pill ok">Disponible</span>'}
       </div>`;
@@ -759,7 +1470,10 @@ function renderCaducadas(){
   html+='</tbody></table></div>'; box.innerHTML=html;
   box.querySelectorAll('button[data-reactivar]').forEach(b=> b.onclick=()=> reactivarInvitacion(b.dataset.reactivar));
 }
-async function reactivarInvitacion(guestId){ try{ await colGuests().doc(guestId).update({used:false,usedAt:null}); toast('Invitación reactivada'); }catch(e){ console.error(e); toast('Error al reactivar'); } }
+async function reactivarInvitacion(guestId){
+  try{ await colGuests().doc(guestId).update({used:false,usedAt:null}); toast('Invitación reactivada'); }
+  catch(e){ console.error(e); toast('Error al reactivar'); }
+}
 
 /* Eliminar invitado/egresado (cascada) */
 async function deleteGuestCascade(guestId){
@@ -775,7 +1489,10 @@ async function deleteGuestCascade(guestId){
       const hijos = hijosSnap.docs.map(d=>({id:d.id}));
       for(let i=0;i<hijos.length;i+=400){
         const batch = db.batch();
-        hijos.slice(i,i+400).forEach(h=>{ batch.delete(colGuests().doc(h.id)); try{ batch.delete(colPublic().doc(`${state.uid}_${h.id}`)); }catch(_){ } });
+        hijos.slice(i,i+400).forEach(h=>{
+          batch.delete(colGuests().doc(h.id));
+          try{ batch.delete(colPublic().doc(`${state.uid}_${h.id}`)); }catch(_){}
+        });
         await batch.commit();
       }
     }
@@ -785,12 +1502,15 @@ async function deleteGuestCascade(guestId){
   }catch(e){ console.error(e); toast('No se pudo eliminar'); }
 }
 
-/* ===== Eventos → listar sólo EGRESADOS; “Ver invitados” + “Ver QR” ===== */
+/* ===== Eventos → listar sólo EGRESADOS ===== */
 function renderInvitadosDeEvento(eventId){
   state.ui.invitadosEventoActual=eventId;
   const zona=$('zonaInvitadosEvento');
   const ev=state.events.find(e=>e.id===eventId);
-  if(!ev){ zona.innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>'; return; }
+  if(!ev){
+    zona.innerHTML='<div class="muted">Elegí un evento para ver sus invitados.</div>';
+    return;
+  }
 
   const q=($('buscarInvitadosInput').value||'').trim().toLowerCase();
   const egresados = state.guests
@@ -847,6 +1567,7 @@ function renderInvitadosDeEvento(eventId){
               <td class="actions">
                 <button class="btn ghost" onclick="verQR('${h.id}')">Ver QR</button>
                 <button class="btn ok" onclick="regenerarQR('${h.id}')">Re-generar</button>
+                <button class="btn ok" onclick="descargarFlyerInvitado('${h.id}')">Descargar flyer</button>
                 <button class="btn danger" onclick="deleteGuestCascade('${h.id}')">Eliminar</button>
               </td>
             </tr>`;
@@ -855,7 +1576,9 @@ function renderInvitadosDeEvento(eventId){
           box.innerHTML = html;
         }
         box.classList.remove('hidden');
-      }else{ box.classList.add('hidden'); box.innerHTML=''; }
+      }else{
+        box.classList.add('hidden'); box.innerHTML='';
+      }
     };
   });
 }
@@ -869,7 +1592,8 @@ async function toggleScanner(){
   if(stream){ await stopScanner(); btn.textContent='Iniciar cámara'; return; }
   try{
     const sel=$('resSel').value; let width={ideal:1280}, height={ideal:720};
-    if(sel==='fhd'){ width={ideal:1920}; height={ideal:1080}; } if(sel==='auto'){ width={ideal:1280}; height={ideal:720}; }
+    if(sel==='fhd'){ width={ideal:1920}; height={ideal:1080}; }
+    if(sel==='auto'){ width={ideal:1280}; height={ideal:720}; }
     stream=await navigator.mediaDevices.getUserMedia({ video:{ width, height, facingMode:{ideal:'environment'} }, audio:false });
     const video=$('video'); video.setAttribute('playsinline','true'); video.srcObject=stream; await video.play();
     $('scanResultado').textContent='Cámara lista. Escaneando…'; hint.textContent=''; track = stream.getVideoTracks()[0];
@@ -878,25 +1602,75 @@ async function toggleScanner(){
       detector = new window.BarcodeDetector({formats:['qr_code']});
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const loop=async()=>{ if(!stream) return; try{ const now=performance.now(); if(now-lastTime>60){ canvas.width=video.videoWidth||640; canvas.height=video.videoHeight||480; ctx.drawImage(video,0,0,canvas.width,canvas.height); const codes=await detector.detect(canvas); if(codes && codes.length){ await onDecoded(codes[0].rawValue); } lastTime = now; } }catch(_){}
-        rafId=requestAnimationFrame(loop); }; loop();
+      const loop=async()=>{
+        if(!stream) return;
+        try{
+          const now=performance.now();
+          if(now-lastTime>60){
+            canvas.width=video.videoWidth||640;
+            canvas.height=video.videoHeight||480;
+            ctx.drawImage(video,0,0,canvas.width,canvas.height);
+            const codes=await detector.detect(canvas);
+            if(codes && codes.length){ await onDecoded(codes[0].rawValue); }
+            lastTime = now;
+          }
+        }catch(_){}
+        rafId=requestAnimationFrame(loop);
+      };
+      loop();
     }
 
     barcodeReader = new ZXing.BrowserMultiFormatReader();
-    try{ barcodeReader.decodeFromVideoElementContinuously(video, async (result, err)=>{ if(result && result.getText){ await onDecoded(result.getText()); } }); }catch(_){}
+    try{
+      barcodeReader.decodeFromVideoElementContinuously(video, async (result, err)=>{
+        if(result && result.getText){ await onDecoded(result.getText()); }
+      });
+    }catch(_){}
     btn.textContent='Detener cámara';
-  }catch(err){ console.error(err); hint.textContent='No se pudo abrir la cámara.'; toast('No se pudo abrir la cámara'); }
+  }catch(err){
+    console.error(err); hint.textContent='No se pudo abrir la cámara.'; toast('No se pudo abrir la cámara');
+  }
 }
-async function onDecoded(text){ if(scanningBusy) return; if(!text) return; if(text===lastDecoded) return; scanningBusy=true; lastDecoded=text; try{ await handleScan(text); } finally{ setTimeout(()=>{ scanningBusy=false; }, 500); } }
-async function toggleTorch(){ try{ if(!track) return toast('Torch no disponible'); const cap=track.getCapabilities?.(); if(!cap||!cap.torch) return toast('Este dispositivo no soporta linterna'); torchOn=!torchOn; await track.applyConstraints({advanced:[{torch: torchOn}]}); toast(torchOn?'Linterna encendida':'Linterna apagada'); }catch(e){ console.warn(e); toast('No se pudo cambiar la linterna'); } }
-async function stopScanner(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } if(barcodeReader){ try{ barcodeReader.reset(); }catch{} barcodeReader=null; } if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } const video=$('video'); try{ video.pause(); }catch{} video.srcObject=null; $('scanResultado').textContent='Cámara detenida'; scanningBusy=false; lastDecoded=''; }
+async function onDecoded(text){
+  if(scanningBusy) return; if(!text) return; if(text===lastDecoded) return;
+  scanningBusy=true; lastDecoded=text;
+  try{ await handleScan(text); }
+  finally{ setTimeout(()=>{ scanningBusy=false; }, 500); }
+}
+async function toggleTorch(){
+  try{
+    if(!track) return toast('Torch no disponible');
+    const cap=track.getCapabilities?.(); if(!cap||!cap.torch) return toast('Este dispositivo no soporta linterna');
+    torchOn=!torchOn;
+    await track.applyConstraints({advanced:[{torch: torchOn}]});
+    toast(torchOn?'Linterna encendida':'Linterna apagada');
+  }catch(e){ console.warn(e); toast('No se pudo cambiar la linterna'); }
+}
+async function stopScanner(){
+  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  if(barcodeReader){ try{ barcodeReader.reset(); }catch{} barcodeReader=null; }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  const video=$('video'); try{ video.pause(); }catch{} video.srcObject=null;
+  $('scanResultado').textContent='Cámara detenida'; scanningBusy=false; lastDecoded='';
+}
 function setScanMsg(msg){ $('scanResultado').textContent=msg; }
-function procesarManual(fromTyping=false){ const v=($('manualCode').value||'').trim(); if(!v) return; if(fromTyping && v.length<6 && !v.includes('?u=')) return; handleScan(v); }
+function procesarManual(fromTyping=false){
+  const v=($('manualCode').value||'').trim();
+  if(!v) return;
+  if(fromTyping && v.length<6 && !v.includes('?u=')) return;
+  handleScan(v);
+}
 async function handleScan(raw){
-  try{ const url=new URL(raw); const u=url.searchParams.get('u'), g=url.searchParams.get('g'), t=url.searchParams.get('t'); if(u&&g&&t){ await checkinFromURL(u,g,t); return; } }catch(_){}
-  const code=(raw||'').trim(); const g=state.guests.find(x=>x.token===code);
+  try{
+    const url=new URL(raw);
+    const u=url.searchParams.get('u'), g=url.searchParams.get('g'), t=url.searchParams.get('t');
+    if(u&&g&&t){ await checkinFromURL(u,g,t); return; }
+  }catch(_){}
+  const code=(raw||'').trim();
+  const g=state.guests.find(x=>x.token===code);
   if(!g){ setScanMsg('❌ QR/Token no válido'); return; }
-  const filtroEv=$('scanEvento').value; if(filtroEv && g.eventId!==filtroEv){ setScanMsg('⛔ Pertenece a otro evento'); return; }
+  const filtroEv=$('scanEvento').value;
+  if(filtroEv && g.eventId!==filtroEv){ setScanMsg('⛔ Pertenece a otro evento'); return; }
   if(g.used){ setScanMsg(`⚠️ Ya usado por ${g.nombre}`); return; }
   await marcarUsadoYMostrar(g);
 }
@@ -904,7 +1678,7 @@ async function checkinFromURL(u,gid,token){
   if(!state.uid){ setScanMsg('Iniciá sesión para escanear'); return; }
   if(state.uid!==u){ setScanMsg('⛔ Este QR pertenece a otra cuenta'); return; }
   try{
-    const tokenHash=await sha256hex(decodeURIComponent(token||'')); 
+    const tokenHash=await sha256hex(decodeURIComponent(token||''));
     const doc=await colPublic().doc(`${u}_${gid}`).get();
     if(!doc.exists){ setScanMsg('❌ Enlace inválido'); return; }
     const data=doc.data(); if(data.tokenHash!==tokenHash){ setScanMsg('⛔ Token incorrecto'); return; }
@@ -919,7 +1693,8 @@ async function marcarUsadoYMostrar(guest){
   const ts=Date.now();
   try{ await colGuests().doc(guest.id).update({used:true,usedAt:ts}); }
   catch(e){ console.error(e); toast('No se pudo marcar el ingreso'); return; }
-  await pintarFlyer(guest); showModal();
+  await pintarFlyer(guest);
+  showModal();
   const ev=state.events.find(e=>e.id===guest.eventId);
   setScanMsg(`✅ Invitado: ${guest.nombre} — Evento: ${ev?ev.nombre:''}`);
   renderCaducadas(); filtrarInvitadosActual(); renderInvitadosRecientes(); renderEventos();
@@ -928,7 +1703,14 @@ function showModal(){ $('modalCheckin').style.display='flex'; }
 function hideModal(){ $('modalCheckin').style.display='none'; }
 
 /* ===== Boot ===== */
-window.addEventListener('load',async()=>{ await initCloud(); if(!mustHaveFirebase) return; initLogoEditorInputs(); initFontEditorInputs(); updateEgresadoSelectorVisibility(); });
+window.addEventListener('load',async()=>{
+  await initCloud();
+  if(!mustHaveFirebase) return;
+  initLogoEditorInputs();
+  initFontEditorInputs();
+  initFlyerMetaInputs();
+  updateEgresadoSelectorVisibility();
+});
 </script>
 </body>
 </html>
